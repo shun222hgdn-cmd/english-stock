@@ -1,0 +1,79 @@
+# main ブランチに push されたら、テスト → ビルド → GitHub Pages へ公開する
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Actions 画面から手動で実行することもできる
+  workflow_dispatch:
+
+# GitHub Pages へ公開するために必要な権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時に複数のデプロイが走らないようにする
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v5
+
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: テストの実行
+        run: npm test
+
+      - name: 環境変数の確認
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          missing=0
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "::error::Repository variable 'VITE_SUPABASE_URL' が未設定です。Settings → Secrets and variables → Actions → Variables で設定してください。"
+            missing=1
+          fi
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Repository variable 'VITE_SUPABASE_PUBLISHABLE_KEY' が未設定です。Settings → Secrets and variables → Actions → Variables で設定してください。"
+            missing=1
+          fi
+          exit $missing
+
+      - name: ビルド
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build
+
+      - name: GitHub Pages の設定
+        uses: actions/configure-pages@v5
+
+      - name: dist フォルダのアップロード
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages へデプロイ
+        id: deployment
+        uses: actions/deploy-pages@v4
