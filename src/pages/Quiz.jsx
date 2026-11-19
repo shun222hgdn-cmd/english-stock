@@ -116,7 +116,6 @@ export default function Quiz({ stocks, onNavigate }) {
       ) : qa ? (
         <>
           <QuizCard
-            prompt={isJaToEn ? '英語で何と言う？' : '日本語の意味は？'}
             question={qa.question}
             answer={qa.answer}
             questionLang={isJaToEn ? 'ja' : 'en'}

@@ -2,7 +2,6 @@
  * ランダム出題の問題カード。問題を中央に大きく表示し、解答は showAnswer が true のときだけ表示する。
  *
  * @param {{
- *   prompt: string,          // 「英語で何と言う？」などの問いかけ
  *   question: string,        // 問題文
  *   answer: string,          // 解答
  *   questionLang: string,    // 問題文の言語（読み上げ・フォント用）
@@ -12,7 +11,6 @@
  * }} props
  */
 export default function QuizCard({
-  prompt,
   question,
   answer,
   questionLang,
@@ -23,7 +21,6 @@ export default function QuizCard({
   return (
     <section className="card quiz-card" aria-label="問題">
       <span className="quiz-badge">{categoryLabel}</span>
-      <p className="quiz-prompt">{prompt}</p>
       <p className="quiz-question" lang={questionLang}>
         {question}
       </p>

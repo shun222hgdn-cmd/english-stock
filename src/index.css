@@ -561,10 +561,6 @@ code {
   font-size: 0.8rem;
 }
 
-.quiz-prompt {
-  color: var(--color-sub);
-}
-
 .quiz-question {
   font-size: clamp(1.4rem, 6vw, 1.85rem);
   font-weight: 800;
