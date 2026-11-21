@@ -627,13 +627,6 @@ code {
   overflow-wrap: anywhere;
 }
 
-.empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
 /* ---------- ランダム出題 ---------- */
 .segmented {
   display: grid;

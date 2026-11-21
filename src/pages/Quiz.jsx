@@ -12,9 +12,9 @@ import {
  * ランダム出題画面。
  * 出題のたびにデータベースへ問い合わせず、取得済みの stocks から JavaScript で選ぶ。
  *
- * @param {{ stocks: Array<object>, onNavigate: (page: string) => void }} props
+ * @param {{ stocks: Array<object> }} props
  */
-export default function Quiz({ stocks, onNavigate }) {
+export default function Quiz({ stocks }) {
   const [quizCategory, setQuizCategory] = useState('all') // 出題範囲（初期値：すべて）
   const [quizDirection, setQuizDirection] = useState('ja-en') // 出題方向（初期値：日本語 → 英語）
   const [currentId, setCurrentId] = useState(null) // 現在の問題のID
@@ -58,8 +58,6 @@ export default function Quiz({ stocks, onNavigate }) {
   const isJaToEn = quizDirection === 'ja-en'
   // 出題方向に応じた「問題」と「答え」
   const qa = currentQuestion ? getQuestionAndAnswer(currentQuestion, quizDirection) : null
-  const emptyTarget =
-    quizCategory === 'word' ? '英単語' : quizCategory === 'phrase' ? 'フレーズ' : '英単語・フレーズ'
 
   return (
     <section className="page">
@@ -95,25 +93,8 @@ export default function Quiz({ stocks, onNavigate }) {
         ))}
       </div>
 
-      {candidates.length === 0 ? (
-        // 出題範囲に登録が0件のとき
-        <div className="card empty-state">
-          <p>出題できる{emptyTarget}がまだありません。</p>
-          <p className="muted">ストック画面から登録すると、ここで復習できます。</p>
-          <div className="empty-actions">
-            {quizCategory !== 'phrase' && (
-              <button type="button" className="btn btn-secondary" onClick={() => onNavigate('words')}>
-                英単語を登録
-              </button>
-            )}
-            {quizCategory !== 'word' && (
-              <button type="button" className="btn btn-secondary" onClick={() => onNavigate('phrases')}>
-                フレーズを登録
-              </button>
-            )}
-          </div>
-        </div>
-      ) : qa ? (
+      {/* 出題範囲に登録が0件のときは、問題カードを表示しない */}
+      {qa ? (
         <>
           <QuizCard
             question={qa.question}

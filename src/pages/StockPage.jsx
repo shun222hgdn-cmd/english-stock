@@ -99,15 +99,8 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
         {isSearching ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
       </p>
 
-      {filteredStocks.length === 0 ? (
-        <div className="card empty-state">
-          <p>まだ{noun}が登録されていません。</p>
-          <button type="button" className="btn btn-primary" onClick={() => setEditingStock({ mode: 'add' })}>
-            <PlusIcon size={18} />
-            <span>最初の{noun === '英単語・フレーズ' ? '1件' : noun}を登録する</span>
-          </button>
-        </div>
-      ) : visibleStocks.length === 0 ? (
+      {/* 登録が0件のときは何も表示しない（右上の＋から登録する） */}
+      {filteredStocks.length === 0 ? null : visibleStocks.length === 0 ? (
         <div className="card empty-state">
           <p>「{searchQuery.trim()}」に一致する{noun}はありません。</p>
         </div>

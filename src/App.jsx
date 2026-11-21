@@ -193,7 +193,7 @@ function MainApp({ userId, onSignOut }) {
           />
         )
       case 'quiz':
-        return <Quiz key={currentFolder.id} stocks={folderStocks} onNavigate={navigate} />
+        return <Quiz key={currentFolder.id} stocks={folderStocks} />
       default:
         return <Home wordCount={counts.word} phraseCount={counts.phrase} onNavigate={navigate} />
     }
