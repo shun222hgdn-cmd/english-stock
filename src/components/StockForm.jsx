@@ -1,51 +1,126 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
-import { cleanStockInput } from '../utils/validation'
+import AutoTextarea from './AutoTextarea'
+import { CheckIcon, CloseIcon } from './Icons'
+import { cleanStockInput, findDuplicate } from '../utils/validation'
 import { toErrorMessage } from '../utils/errors'
 
 /**
  * 登録・編集フォーム（モーダル）。
  * カテゴリーは表示中のストック画面で決まるため、ここでは英語と日本語訳だけを入力する。
  *
+ * 操作をスムーズにするための工夫：
+ * - 英語欄で Enter → 日本語欄へ移動、日本語欄で Enter → 保存（Shift + Enter で改行）
+ * - 日本語入力の変換確定の Enter では移動・保存しない
+ * - 入力欄は文字数に合わせて自動で高さが伸びる
+ * - 「Save & Next」で保存後もフォームを開いたまま、続けて登録できる
+ * - 同じ英語がすでに登録されている場合は注意を表示する（登録は可能）
+ * - 何か入力している間は、背景をタップしても閉じない（入力内容を誤って消さない）
+ *
  * @param {{
+ *   mode: 'add' | 'edit',
  *   title: string,
- *   initialValues?: { english: string, japanese: string },
+ *   initialValues?: { id?: string, english: string, japanese: string },
+ *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じカテゴリー）
  *   onSubmit: (values: { english: string, japanese: string }) => Promise<void>,
  *   onClose: () => void,
  * }} props
  */
-export default function StockForm({ title, initialValues, onSubmit, onClose }) {
+export default function StockForm({ mode, title, initialValues, existingStocks = [], onSubmit, onClose }) {
   const id = useId()
+  const englishRef = useRef(null)
+  const japaneseRef = useRef(null)
+
   // 編集時は既存の内容を初期値にする
   const [english, setEnglish] = useState(initialValues?.english ?? '')
   const [japanese, setJapanese] = useState(initialValues?.japanese ?? '')
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitError, setSubmitError] = useState('')
+  const [savedMessage, setSavedMessage] = useState('') // 「続けて登録」で保存したときのお知らせ
   const [saving, setSaving] = useState(false)
   // 連打による二重送信を確実に防ぐためのフラグ（state の反映を待たずに判定できる）
   const savingRef = useRef(false)
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  const isAdd = mode === 'add'
+  const isEmpty = english.trim() === '' && japanese.trim() === ''
+
+  // 同じ英語がすでに登録されていないか（編集中のデータ自身は除く）
+  const duplicate = useMemo(
+    () => findDuplicate(existingStocks, english, initialValues?.id),
+    [existingStocks, english, initialValues?.id],
+  )
+
+  /**
+   * 保存処理
+   * @param {boolean} addAnother true のときは保存後にフォームを空にして続けて登録する
+   */
+  async function save(addAnother) {
     if (savingRef.current) return
 
     // 前後の空白を取り除き、空欄チェックを行う
     const { values, errors, isValid } = cleanStockInput({ english, japanese })
     setFieldErrors(errors)
     setSubmitError('')
-    if (!isValid) return
+    setSavedMessage('')
+    if (!isValid) {
+      // 空欄のほうにカーソルを移して、すぐ入力できるようにする
+      ;(errors.english ? englishRef : japaneseRef).current?.focus()
+      return
+    }
 
     savingRef.current = true
     setSaving(true)
     try {
       await onSubmit(values)
-      onClose() // 保存成功：フォームを閉じる
+      if (addAnother) {
+        // 続けて登録：入力欄を空にして英語欄に戻る
+        setEnglish('')
+        setJapanese('')
+        setSavedMessage(`「${values.english}」を保存しました`)
+        englishRef.current?.focus()
+      } else {
+        onClose() // 保存成功：フォームを閉じる
+        return
+      }
     } catch (err) {
       // 保存失敗：入力内容は残したままエラーを表示する
       setSubmitError(toErrorMessage(err, '保存に失敗しました。'))
-      savingRef.current = false
-      setSaving(false)
     }
+    savingRef.current = false
+    setSaving(false)
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    save(false)
+  }
+
+  /**
+   * Enter キーの動き（Shift + Enter は通常どおり改行）
+   * 日本語入力の変換中（isComposing）は何もしない
+   */
+  function handleKeyDown(event, next) {
+    if (event.key !== 'Enter' || event.shiftKey) return
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    event.preventDefault()
+    // Ctrl/⌘ + Enter は「続けて登録」
+    if (isAdd && (event.ctrlKey || event.metaKey)) {
+      save(true)
+      return
+    }
+    next()
+  }
+
+  // 入力し直したら、その欄のエラーとお知らせを消す
+  function changeEnglish(value) {
+    setEnglish(value)
+    if (fieldErrors.english) setFieldErrors((prev) => ({ ...prev, english: undefined }))
+    if (savedMessage) setSavedMessage('')
+  }
+  function changeJapanese(value) {
+    setJapanese(value)
+    if (fieldErrors.japanese) setFieldErrors((prev) => ({ ...prev, japanese: undefined }))
+    if (savedMessage) setSavedMessage('')
   }
 
   // 保存中は閉じられないようにする
@@ -54,55 +129,81 @@ export default function StockForm({ title, initialValues, onSubmit, onClose }) {
   }
 
   return (
-    <Modal titleId={`${id}-title`} onRequestClose={requestClose}>
+    <Modal
+      titleId={`${id}-title`}
+      onRequestClose={requestClose}
+      closeOnBackdrop={isEmpty}
+      className="modal-form"
+    >
       <form onSubmit={handleSubmit} noValidate>
-        <h2 id={`${id}-title`} className="modal-title">
-          {title}
-        </h2>
-
-        <div className="field">
-          <label htmlFor={`${id}-english`}>English</label>
-          <textarea
-            id={`${id}-english`}
-            className="input"
-            rows={2}
-            value={english}
-            onChange={(e) => setEnglish(e.target.value)}
-            lang="en"
-            autoCapitalize="none"
-            autoComplete="off"
-            spellCheck="true"
-            aria-invalid={Boolean(fieldErrors.english)}
-            aria-describedby={fieldErrors.english ? `${id}-english-error` : undefined}
+        <div className="modal-header">
+          <h2 id={`${id}-title`} className="modal-title">
+            {title}
+          </h2>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={requestClose}
+            aria-label="閉じる"
+            title="閉じる（Esc）"
             disabled={saving}
-          />
-          {fieldErrors.english && (
-            <p id={`${id}-english-error`} className="field-error">
-              {fieldErrors.english}
-            </p>
-          )}
+          >
+            <CloseIcon size={20} />
+          </button>
         </div>
 
-        <div className="field">
-          <label htmlFor={`${id}-japanese`}>Japanese</label>
-          <textarea
-            id={`${id}-japanese`}
-            className="input"
-            rows={2}
-            value={japanese}
-            onChange={(e) => setJapanese(e.target.value)}
-            lang="ja"
-            autoComplete="off"
-            aria-invalid={Boolean(fieldErrors.japanese)}
-            aria-describedby={fieldErrors.japanese ? `${id}-japanese-error` : undefined}
-            disabled={saving}
-          />
-          {fieldErrors.japanese && (
-            <p id={`${id}-japanese-error`} className="field-error">
-              {fieldErrors.japanese}
+        <InputField
+          id={`${id}-english`}
+          label="English"
+          hint="英語"
+          inputRef={englishRef}
+          value={english}
+          onChange={changeEnglish}
+          onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
+          placeholder="e.g. It depends on the situation."
+          lang="en"
+          autoCapitalize="sentences"
+          enterKeyHint="next"
+          error={fieldErrors.english}
+          readOnly={saving}
+          autoFocus
+        >
+          {duplicate && (
+            <p className="field-note" role="status">
+              すでに登録済みです（{duplicate.japanese}）
             </p>
           )}
-        </div>
+        </InputField>
+
+        <InputField
+          id={`${id}-japanese`}
+          label="Japanese"
+          hint="日本語訳"
+          inputRef={japaneseRef}
+          value={japanese}
+          onChange={changeJapanese}
+          onKeyDown={(e) => handleKeyDown(e, () => save(false))}
+          placeholder="例：状況によります。"
+          lang="ja"
+          enterKeyHint="done"
+          error={fieldErrors.japanese}
+          readOnly={saving}
+        />
+
+        <p className="keyboard-hint" aria-hidden="true">
+          Enter で次へ・保存 ／ Shift + Enter で改行
+          {isAdd && ' ／ Ctrl + Enter で続けて登録'}
+        </p>
+
+        {/* 続けて登録したときのお知らせ（読み上げにも対応） */}
+        <p className="saved-message" role="status" aria-live="polite">
+          {savedMessage && (
+            <>
+              <CheckIcon size={16} />
+              <span>{savedMessage}</span>
+            </>
+          )}
+        </p>
 
         {submitError && (
           <p className="alert" role="alert">
@@ -110,15 +211,65 @@ export default function StockForm({ title, initialValues, onSubmit, onClose }) {
           </p>
         )}
 
-        <div className="modal-actions">
+        <div className={`modal-actions${isAdd ? ' modal-actions-row' : ''}`}>
+          {isAdd && (
+            <button type="button" className="btn btn-secondary" onClick={() => save(true)} disabled={saving}>
+              Save &amp; Next
+            </button>
+          )}
           <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
-          <button type="button" className="btn btn-ghost btn-block" onClick={requestClose} disabled={saving}>
-            Cancel
           </button>
         </div>
       </form>
     </Modal>
+  )
+}
+
+/**
+ * ラベル・自動で伸びる入力欄・クリアボタン・エラー表示をまとめた入力項目。
+ */
+function InputField({ id, label, hint, inputRef, value, onChange, error, autoFocus, children, ...textareaProps }) {
+  const errorId = `${id}-error`
+
+  // × ボタン：入力を消して、すぐ打ち直せるようにカーソルを戻す
+  function clear() {
+    onChange('')
+    inputRef.current?.focus()
+  }
+
+  return (
+    <div className="field">
+      <label htmlFor={id} className="field-label">
+        <span>{label}</span>
+        <span className="field-label-hint">{hint}</span>
+      </label>
+      <div className="input-wrap">
+        <AutoTextarea
+          ref={inputRef}
+          id={id}
+          className="input input-auto"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete="off"
+          spellCheck="true"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          data-autofocus={autoFocus ? '' : undefined}
+          {...textareaProps}
+        />
+        {value && !textareaProps.readOnly && (
+          <button type="button" className="clear-btn" onClick={clear} aria-label={`${hint}を消去`} tabIndex={-1}>
+            <CloseIcon size={16} />
+          </button>
+        )}
+      </div>
+      {error && (
+        <p id={errorId} className="field-error">
+          {error}
+        </p>
+      )}
+      {children}
+    </div>
   )
 }

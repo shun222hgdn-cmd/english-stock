@@ -112,3 +112,19 @@ export function LogoIcon(props) {
     </Icon>
   )
 }
+
+export function CloseIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Icon>
+  )
+}
+
+export function CheckIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7" />
+    </Icon>
+  )
+}

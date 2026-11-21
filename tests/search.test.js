@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { filterStocks, sortByEnglish } from '../src/utils/search.js'
-import { cleanStockInput } from '../src/utils/validation.js'
+import { cleanStockInput, findDuplicate } from '../src/utils/validation.js'
 
 const stocks = [
   { id: '1', category: 'word', english: 'Prioritize', japanese: '優先する' },
@@ -87,4 +87,18 @@ test('入力値の前後の空白は取り除かれる（文中の空白は残�
     english: 'It depends on the situation.',
     japanese: '状況によります。',
   })
+})
+
+test('重複チェック：大文字・小文字と前後の空白を無視して同じ英語を見つける', () => {
+  assert.equal(findDuplicate(stocks, '  ambiguous ')?.id, '2')
+  assert.equal(findDuplicate(stocks, 'AMBIGUOUS')?.id, '2')
+})
+
+test('重複チェック：編集中のデータ自身は重複扱いしない', () => {
+  assert.equal(findDuplicate(stocks, 'Ambiguous', '2'), null)
+})
+
+test('重複チェック：部分一致や空欄は重複扱いしない', () => {
+  assert.equal(findDuplicate(stocks, 'Ambig'), null)
+  assert.equal(findDuplicate(stocks, '   '), null)
 })

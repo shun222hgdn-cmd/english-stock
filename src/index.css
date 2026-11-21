@@ -312,6 +312,111 @@ button:disabled {
   font-size: 0.95rem;
 }
 
+/* フォームのラベル：「English 英語」のように英語名と日本語の補足を並べる */
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.field .field-label {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.field-label-hint {
+  color: var(--color-sub);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* 入力欄の右上にクリアボタンを重ねるための枠 */
+.input-wrap {
+  position: relative;
+}
+
+/* 文字数に合わせて高さが伸びる入力欄（手動のサイズ変更は不要） */
+textarea.input.input-auto {
+  display: block;
+  resize: none;
+  overflow-y: auto;
+  min-height: 52px;
+  max-height: 40vh;
+  padding: 13px 44px 13px 14px; /* 右側はクリアボタンの分あける */
+  font-size: 1.05rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+textarea.input.input-auto::placeholder {
+  color: #6b7280;
+}
+
+/* 入力中の欄をはっきり分かるように、アクセントカラーの枠と淡い光を付ける */
+textarea.input.input-auto:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.18);
+}
+
+textarea.input.input-auto[aria-invalid='true']:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+}
+
+.clear-btn {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-sub);
+}
+
+.clear-btn:hover {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+
+/* 重複の注意（エラーではないので控えめな黄色） */
+.field-note {
+  color: #fbbf24;
+  font-size: 0.85rem;
+}
+
+/* キーボード操作のヒント（タッチ操作の端末では表示しない） */
+.keyboard-hint {
+  margin: -4px 0 12px;
+  color: var(--color-sub);
+  font-size: 0.78rem;
+}
+
+@media (hover: none) {
+  .keyboard-hint {
+    display: none;
+  }
+}
+
+/* 「続けて登録」したときのお知らせ */
+.saved-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.5em;
+  margin-bottom: 8px;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.saved-message:empty {
+  display: none;
+}
+
 .input {
   width: 100%;
   min-height: 48px;
@@ -657,6 +762,23 @@ code {
   font-weight: 800;
 }
 
+/* タイトルと閉じるボタンを横に並べる */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modal-header .modal-title {
+  margin-bottom: 0;
+}
+
+.modal-header .icon-btn {
+  margin: -6px -10px 0 0;
+}
+
 .modal-title-small {
   font-size: 1.15rem;
 }
@@ -683,6 +805,19 @@ code {
 
 .modal-actions-row .btn {
   flex: 1;
+}
+
+/* モーダル表示中は後ろの画面がスクロールしないようにする */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* スマートフォンでは入力フォームを画面上部に出し、キーボードで隠れないようにする */
+@media (max-width: 600px) {
+  .modal-form {
+    margin-top: max(12px, env(safe-area-inset-top));
+    max-height: calc(100dvh - 24px);
+  }
 }
 
 /* アニメーションを減らしたい設定の利用者向け */

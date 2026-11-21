@@ -104,8 +104,10 @@ export default function StockPage({ category, title, singular, noun, stocks, onA
 
       {editingStock && (
         <StockForm
+          mode={editingStock.mode}
           title={editingStock.mode === 'edit' ? `Edit ${singular}` : `Add a ${singular}`}
           initialValues={editingStock.mode === 'edit' ? editingStock.stock : undefined}
+          existingStocks={categoryStocks}
           onSubmit={handleSubmit}
           onClose={() => setEditingStock(null)}
         />

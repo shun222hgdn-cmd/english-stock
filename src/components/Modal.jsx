@@ -8,11 +8,17 @@ import { useEffect, useRef } from 'react'
  * - 閉じたら、開く前にフォーカスしていたボタンにフォーカスを戻す
  *
  * 表示している間だけ親コンポーネントで描画する前提（表示 = マウント）。
+ * 中に data-autofocus 属性の要素があれば、開いたときにそこへカーソルを置く（文末に合わせる）。
  *
- * @param {{ titleId: string, onRequestClose: () => void, children: React.ReactNode }} props
- *   onRequestClose: Esc キーや背景クリックで閉じようとしたときに呼ばれる
+ * @param {{
+ *   titleId: string,
+ *   onRequestClose: () => void,   // Esc キーや背景クリックで閉じようとしたときに呼ばれる
+ *   closeOnBackdrop?: boolean,    // 背景クリックで閉じるか（入力途中は false にして誤操作を防ぐ）
+ *   className?: string,
+ *   children: React.ReactNode,
+ * }} props
  */
-export default function Modal({ titleId, onRequestClose, children }) {
+export default function Modal({ titleId, onRequestClose, closeOnBackdrop = true, className = '', children }) {
   const dialogRef = useRef(null)
 
   useEffect(() => {
@@ -20,6 +26,16 @@ export default function Modal({ titleId, onRequestClose, children }) {
     // 開く前にフォーカスしていた要素を覚えておく
     const previouslyFocused = document.activeElement
     dialog.showModal()
+
+    // 指定された入力欄にカーソルを置く（既存の文字がある場合は文末に）
+    const target = dialog.querySelector('[data-autofocus]')
+    if (target) {
+      target.focus()
+      if (typeof target.setSelectionRange === 'function') {
+        const end = target.value.length
+        target.setSelectionRange(end, end)
+      }
+    }
 
     return () => {
       if (dialog.open) dialog.close()
@@ -38,13 +54,13 @@ export default function Modal({ titleId, onRequestClose, children }) {
 
   // 背景（ダイアログの外側）をクリックしたら閉じる
   function handleClick(event) {
-    if (event.target === dialogRef.current) onRequestClose()
+    if (closeOnBackdrop && event.target === dialogRef.current) onRequestClose()
   }
 
   return (
     <dialog
       ref={dialogRef}
-      className="modal"
+      className={`modal ${className}`.trim()}
       aria-labelledby={titleId}
       onCancel={handleCancel}
       onClick={handleClick}

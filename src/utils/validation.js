@@ -20,3 +20,17 @@ export function cleanStockInput(input) {
     isValid: Object.keys(errors).length === 0,
   }
 }
+
+/**
+ * 同じ英語（大文字・小文字と前後の空白は無視）がすでに登録されていれば、そのデータを返す。
+ * 編集中のデータ自身は excludeId で除外する。見つからなければ null。
+ *
+ * @param {Array<{ id: string, english: string }>} stocks 同じカテゴリーの登録データ
+ * @param {string} english 入力中の英語
+ * @param {string} [excludeId] 除外するデータのID
+ */
+export function findDuplicate(stocks, english, excludeId) {
+  const key = String(english ?? '').trim().toLowerCase()
+  if (!key) return null
+  return stocks.find((stock) => stock.id !== excludeId && stock.english.trim().toLowerCase() === key) ?? null
+}
