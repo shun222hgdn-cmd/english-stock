@@ -152,43 +152,46 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
           </button>
         </div>
 
-        <InputField
-          id={`${id}-english`}
-          label="English"
-          hint="英語"
-          inputRef={englishRef}
-          value={english}
-          onChange={changeEnglish}
-          onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
-          placeholder="e.g. It depends on the situation."
-          lang="en"
-          autoCapitalize="sentences"
-          enterKeyHint="next"
-          error={fieldErrors.english}
-          readOnly={saving}
-          autoFocus
-        >
-          {duplicate && (
-            <p className="field-note" role="status">
-              すでに登録済みです（{duplicate.japanese}）
-            </p>
-          )}
-        </InputField>
+        {/* 英語と日本語訳を1つのカードにまとめ、入力欄ごとの枠はなくす */}
+        <div className="field-group">
+          <InputField
+            id={`${id}-english`}
+            label="English"
+            hint="英語"
+            inputRef={englishRef}
+            value={english}
+            onChange={changeEnglish}
+            onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
+            placeholder="e.g. It depends on the situation."
+            lang="en"
+            autoCapitalize="sentences"
+            enterKeyHint="next"
+            error={fieldErrors.english}
+            readOnly={saving}
+            autoFocus
+          >
+            {duplicate && (
+              <p className="field-note" role="status">
+                すでに登録済みです（{duplicate.japanese}）
+              </p>
+            )}
+          </InputField>
 
-        <InputField
-          id={`${id}-japanese`}
-          label="Japanese"
-          hint="日本語訳"
-          inputRef={japaneseRef}
-          value={japanese}
-          onChange={changeJapanese}
-          onKeyDown={(e) => handleKeyDown(e, () => save(false))}
-          placeholder="例：状況によります。"
-          lang="ja"
-          enterKeyHint="done"
-          error={fieldErrors.japanese}
-          readOnly={saving}
-        />
+          <InputField
+            id={`${id}-japanese`}
+            label="日本語訳"
+            hint="日本語訳"
+            inputRef={japaneseRef}
+            value={japanese}
+            onChange={changeJapanese}
+            onKeyDown={(e) => handleKeyDown(e, () => save(false))}
+            placeholder="例：状況によります。"
+            lang="ja"
+            enterKeyHint="done"
+            error={fieldErrors.japanese}
+            readOnly={saving}
+          />
+        </div>
 
         <p className="keyboard-hint" aria-hidden="true">
           Enter で次へ・保存 ／ Shift + Enter で改行
@@ -239,31 +242,34 @@ function InputField({ id, label, hint, inputRef, value, onChange, error, autoFoc
   }
 
   return (
-    <div className="field">
+    // 欄の余白部分をタップしても入力できるようにする（ラベル・入力欄以外の場所）
+    <div
+      className={`group-field${error ? ' has-error' : ''}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) inputRef.current?.focus()
+      }}
+    >
       <label htmlFor={id} className="field-label">
-        <span>{label}</span>
-        <span className="field-label-hint">{hint}</span>
+        {label}
       </label>
-      <div className="input-wrap">
-        <AutoTextarea
-          ref={inputRef}
-          id={id}
-          className="input input-auto"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete="off"
-          spellCheck="true"
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? errorId : undefined}
-          data-autofocus={autoFocus ? '' : undefined}
-          {...textareaProps}
-        />
-        {value && !textareaProps.readOnly && (
-          <button type="button" className="clear-btn" onClick={clear} aria-label={`${hint}を消去`} tabIndex={-1}>
-            <CloseIcon size={16} />
-          </button>
-        )}
-      </div>
+      <AutoTextarea
+        ref={inputRef}
+        id={id}
+        className="group-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete="off"
+        spellCheck="true"
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        data-autofocus={autoFocus ? '' : undefined}
+        {...textareaProps}
+      />
+      {value && !textareaProps.readOnly && (
+        <button type="button" className="clear-btn" onClick={clear} aria-label={`${hint}を消去`} tabIndex={-1}>
+          <CloseIcon size={16} />
+        </button>
+      )}
       {error && (
         <p id={errorId} className="field-error">
           {error}

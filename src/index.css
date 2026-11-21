@@ -312,61 +312,82 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-/* フォームのラベル：「English 英語」のように英語名と日本語の補足を並べる */
-.field-label {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+/* 登録フォーム：英語と日本語訳を1つのカードにまとめる（入力欄ごとの枠は付けない） */
+.field-group {
+  margin-bottom: 12px;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s;
 }
 
-.field .field-label {
-  color: var(--color-text);
-  font-weight: 700;
+/* どちらかの欄に入力中は、カード全体の枠をアクセントカラーにする */
+.field-group:focus-within {
+  border-color: var(--color-accent);
 }
 
-.field-label-hint {
-  color: var(--color-sub);
-  font-size: 0.8rem;
-  font-weight: 400;
-}
-
-/* 入力欄の右上にクリアボタンを重ねるための枠 */
-.input-wrap {
+.group-field {
   position: relative;
+  padding: 10px 44px 10px 14px; /* 右側はクリアボタンの分あける */
 }
 
-/* 文字数に合わせて高さが伸びる入力欄（手動のサイズ変更は不要） */
-textarea.input.input-auto {
+/* 2つ目の欄との間は細い線だけ */
+.group-field + .group-field {
+  border-top: 1px solid var(--color-border);
+}
+
+.group-field .field-label {
   display: block;
+  color: var(--color-sub);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* 入力中の欄のラベルだけアクセントカラーにして、どこを打っているか分かるようにする */
+.group-field:focus-within .field-label {
+  color: var(--color-accent);
+}
+
+.group-field.has-error .field-label {
+  color: var(--color-danger);
+}
+
+/* 入力欄そのもの：枠・背景なし、文字に合わせて高さが伸びる */
+.group-input {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
   resize: none;
   overflow-y: auto;
-  min-height: 52px;
+  min-height: 1.5em; /* 空欄でも1行分の高さを確保する */
   max-height: 40vh;
-  padding: 13px 44px 13px 14px; /* 右側はクリアボタンの分あける */
   font-size: 1.05rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  line-height: 1.5;
 }
 
-textarea.input.input-auto::placeholder {
+.group-input:focus,
+.group-input:focus-visible {
+  outline: none; /* カード全体の枠とラベルの色で入力中を示す */
+}
+
+.group-input::placeholder {
   color: #6b7280;
 }
 
-/* 入力中の欄をはっきり分かるように、アクセントカラーの枠と淡い光を付ける */
-textarea.input.input-auto:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.18);
-}
-
-textarea.input.input-auto[aria-invalid='true']:focus {
-  border-color: var(--color-danger);
-  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+.group-field .field-error,
+.group-field .field-note {
+  margin-top: 4px;
 }
 
 .clear-btn {
   position: absolute;
-  top: 8px;
-  right: 6px;
+  top: 26px; /* 入力欄の1行目の高さに合わせる */
+  right: 4px;
   display: grid;
   place-items: center;
   width: 36px;

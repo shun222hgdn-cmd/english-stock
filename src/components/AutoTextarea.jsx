@@ -19,7 +19,12 @@ export default function AutoTextarea({ ref, value, ...props }) {
   useEffect(() => {
     const handleResize = () => fitHeight(innerRef.current)
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    // モーダルの中では、表示される前だと高さを測れないため、表示後にもう一度合わせる
+    const frame = requestAnimationFrame(handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      cancelAnimationFrame(frame)
+    }
   }, [])
 
   return <textarea ref={innerRef} value={value} rows={1} {...props} />
