@@ -300,6 +300,17 @@ https://<GitHubユーザー名>.github.io/english-stock/
 - 既存の単語・フレーズは消えません。アカウントごとに「My Folder」が作られ、その中に移ります（名前はアプリから変更可能）。
 - 実行後に `main` へ push すると、フォルダ対応版が公開されます。
 
+### 11.7 パスワード変更を管理者パスワードで保護する
+
+`supabase/migrations/003_admin_password_lock.sql` を SQL Editor で1回実行すると、ログイン用パスワードの変更に**管理者パスワード**が必要になります。
+
+- アプリ右上の鍵アイコン → 初回だけ「管理者パスワード」を設定 → 以後は管理者パスワードを入れたときだけ変更できる
+- アプリを通さない変更（API の直接呼び出し・パスワード再設定メール・Supabase 管理画面からの変更）はデータベースが拒否する
+- 管理者パスワードは bcrypt で暗号化し、API から見えない `private` スキーマに保存
+- 管理者パスワードを5回間違えると15分間ロック
+- **管理者パスワードを忘れたら**：SQL Editor で `delete from private.admin_settings;` を実行すると未設定に戻り、アプリから設定し直せる
+- **Supabase 管理画面からパスワードを変えたいとき**：一時的に `alter table auth.users disable trigger block_password_change;` → 変更 → `alter table auth.users enable trigger block_password_change;`
+
 ## 12. セキュリティ上の注意事項
 
 - **アクセス制御はデータベース側（RLS）で行っています。** `stocks` テーブルの RLS を無効にしないでください。

@@ -34,7 +34,7 @@ export default function App() {
  * - ログイン済み：メイン画面
  */
 function AuthGate() {
-  const { session, authLoading, signIn, signOut, changePassword } = useAuth()
+  const { session, authLoading, signIn, signOut } = useAuth()
 
   if (authLoading) {
     return (
@@ -54,7 +54,6 @@ function AuthGate() {
       userId={session.user.id}
       email={session.user.email ?? ''}
       onSignOut={signOut}
-      onChangePassword={changePassword}
     />
   )
 }
@@ -66,7 +65,7 @@ function AuthGate() {
  * 1つのアカウントを複数人で使えるよう、データは「フォルダ」ごとに分けて表示する。
  * どの画面も、選んでいるフォルダのデータだけを扱う。
  */
-function MainApp({ userId, email, onSignOut, onChangePassword }) {
+function MainApp({ userId, email, onSignOut }) {
   const [activePage, setActivePage] = useState('home')
   // ストック画面の表示切り替え（All / Words / Phrases）。端末に保存し、開き直しても前回の表示で始める
   const [stockFilter, setStockFilterState] = useState(() =>
@@ -275,7 +274,6 @@ function MainApp({ userId, email, onSignOut, onChangePassword }) {
       {passwordDialogOpen && (
         <PasswordDialog
           email={email}
-          onChangePassword={onChangePassword}
           onClose={() => setPasswordDialogOpen(false)}
         />
       )}
