@@ -2,12 +2,13 @@ import { useId, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import AutoTextarea from './AutoTextarea'
 import { CheckIcon, CloseIcon } from './Icons'
-import { cleanStockInput, findDuplicate } from '../utils/validation'
+import { cleanStockInput, findDuplicate, guessCategory } from '../utils/validation'
 import { toErrorMessage } from '../utils/errors'
 
 /**
  * 登録・編集フォーム（モーダル）。
- * カテゴリーは表示中のストック画面で決まるため、ここでは英語と日本語訳だけを入力する。
+ * 英語・日本語訳に加えて、種類（Word / Phrase）をフォーム上部の切り替えで選ぶ。
+ * 種類を手で選んでいない間は、英語にスペースがあれば Phrase、なければ Word に自動で切り替わる。
  *
  * 操作をスムーズにするための工夫：
  * - 英語欄で Enter → 日本語欄へ移動、日本語欄で Enter → 保存（Shift + Enter で改行）
@@ -19,14 +20,14 @@ import { toErrorMessage } from '../utils/errors'
  *
  * @param {{
  *   mode: 'add' | 'edit',
- *   title: string,
- *   initialValues?: { id?: string, english: string, japanese: string },
- *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じカテゴリー）
- *   onSubmit: (values: { english: string, japanese: string }) => Promise<void>,
+ *   initialValues?: { id?: string, category: 'word' | 'phrase', english: string, japanese: string },
+ *   defaultCategory?: 'word' | 'phrase' | null, // 追加時の種類（null なら英語の内容から自動で判定）
+ *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じフォルダ）
+ *   onSubmit: (values: { category: string, english: string, japanese: string }) => Promise<void>,
  *   onClose: () => void,
  * }} props
  */
-export default function StockForm({ mode, title, initialValues, existingStocks = [], onSubmit, onClose }) {
+export default function StockForm({ mode, initialValues, defaultCategory = null, existingStocks = [], onSubmit, onClose }) {
   const id = useId()
   const englishRef = useRef(null)
   const japaneseRef = useRef(null)
@@ -34,6 +35,11 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
   // 編集時は既存の内容を初期値にする
   const [english, setEnglish] = useState(initialValues?.english ?? '')
   const [japanese, setJapanese] = useState(initialValues?.japanese ?? '')
+  // 種類（Word / Phrase）。編集時は今の種類、追加時は表示中の絞り込み、All なら自動判定
+  const [category, setCategory] = useState(initialValues?.category ?? defaultCategory ?? 'word')
+  // 種類が決まっているか（決まっていなければ、英語の入力に合わせて自動で切り替える）
+  // 画面表示には使わないので ref で持つ（直後の入力でも確実に最新の値を参照できる）
+  const categoryFixedRef = useRef(Boolean(initialValues?.category ?? defaultCategory))
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitError, setSubmitError] = useState('')
   const [savedMessage, setSavedMessage] = useState('') // 「続けて登録」で保存したときのお知らせ
@@ -42,6 +48,8 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
   const savingRef = useRef(false)
 
   const isAdd = mode === 'add'
+  const categoryLabel = category === 'word' ? 'Word' : 'Phrase'
+  const title = isAdd ? `Add a ${categoryLabel}` : `Edit ${categoryLabel}`
   const isEmpty = english.trim() === '' && japanese.trim() === ''
 
   // 同じ英語がすでに登録されていないか（編集中のデータ自身は除く）
@@ -71,7 +79,7 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
     savingRef.current = true
     setSaving(true)
     try {
-      await onSubmit(values)
+      await onSubmit({ category, ...values })
       if (addAnother) {
         // 続けて登録：入力欄を空にして英語欄に戻る
         setEnglish('')
@@ -114,6 +122,8 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
   // 入力し直したら、その欄のエラーとお知らせを消す
   function changeEnglish(value) {
     setEnglish(value)
+    // 種類を手で選んでいなければ、英語の内容から Word / Phrase を自動で切り替える
+    if (!categoryFixedRef.current) setCategory(guessCategory(value))
     if (fieldErrors.english) setFieldErrors((prev) => ({ ...prev, english: undefined }))
     if (savedMessage) setSavedMessage('')
   }
@@ -121,6 +131,12 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
     setJapanese(value)
     if (fieldErrors.japanese) setFieldErrors((prev) => ({ ...prev, japanese: undefined }))
     if (savedMessage) setSavedMessage('')
+  }
+
+  // 種類を手で選んだら、以後は自動で切り替えない
+  function chooseCategory(value) {
+    setCategory(value)
+    categoryFixedRef.current = true
   }
 
   // 保存中は閉じられないようにする
@@ -152,6 +168,26 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
           </button>
         </div>
 
+        {/* 種類の切り替え（Word / Phrase） */}
+        <div className="segmented form-category" role="group" aria-label="種類">
+          {[
+            { value: 'word', label: 'Word', hint: '英単語' },
+            { value: 'phrase', label: 'Phrase', hint: 'フレーズ' },
+          ].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`segmented-btn${category === option.value ? ' is-active' : ''}`}
+              aria-pressed={category === option.value}
+              onClick={() => chooseCategory(option.value)}
+              disabled={saving}
+            >
+              {option.label}
+              <span className="segmented-hint">{option.hint}</span>
+            </button>
+          ))}
+        </div>
+
         {/* 英語と日本語訳を1つのカードにまとめ、入力欄ごとの枠はなくす */}
         <div className="field-group">
           <InputField
@@ -162,7 +198,7 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
             value={english}
             onChange={changeEnglish}
             onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
-            placeholder="e.g. It depends on the situation."
+            placeholder={category === 'word' ? 'e.g. Ambiguous' : 'e.g. It depends on the situation.'}
             lang="en"
             autoCapitalize="sentences"
             enterKeyHint="next"
@@ -185,7 +221,7 @@ export default function StockForm({ mode, title, initialValues, existingStocks =
             value={japanese}
             onChange={changeJapanese}
             onKeyDown={(e) => handleKeyDown(e, () => save(false))}
-            placeholder="例：状況によります。"
+            placeholder={category === 'word' ? '例：曖昧な' : '例：状況によります。'}
             lang="ja"
             enterKeyHint="done"
             error={fieldErrors.japanese}

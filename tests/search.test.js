@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { filterStocks, sortByEnglish } from '../src/utils/search.js'
-import { cleanStockInput, findDuplicate } from '../src/utils/validation.js'
+import { cleanStockInput, findDuplicate, guessCategory } from '../src/utils/validation.js'
 
 const stocks = [
   { id: '1', category: 'word', english: 'Prioritize', japanese: '優先する' },
@@ -101,4 +101,12 @@ test('重複チェック：編集中のデータ自身は重複扱いしない',
 test('重複チェック：部分一致や空欄は重複扱いしない', () => {
   assert.equal(findDuplicate(stocks, 'Ambig'), null)
   assert.equal(findDuplicate(stocks, '   '), null)
+})
+
+test('種類の自動判定：スペースを含めばフレーズ、含まなければ単語', () => {
+  assert.equal(guessCategory('Ambiguous'), 'word')
+  assert.equal(guessCategory('  Ambiguous  '), 'word') // 前後の空白は無視
+  assert.equal(guessCategory('It depends on the situation.'), 'phrase')
+  assert.equal(guessCategory('take off'), 'phrase')
+  assert.equal(guessCategory(''), 'word')
 })

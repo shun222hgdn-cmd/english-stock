@@ -893,6 +893,32 @@ code {
   color: var(--color-accent);
 }
 
+/* ---------- ストック画面の種類表示 ---------- */
+/* All 表示のときに日本語訳の前に付ける Word / Phrase の印 */
+.stock-category {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-sub);
+  font-size: 0.7rem;
+  line-height: 1.6;
+  vertical-align: 1px;
+}
+
+/* 登録フォームの Word / Phrase 切り替え */
+.form-category {
+  margin-bottom: 12px;
+}
+
+.segmented-hint {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
 /* ---------- 下部ナビゲーション ---------- */
 .bottom-nav {
   position: fixed;
@@ -911,7 +937,7 @@ code {
   margin: 0 auto;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .nav-btn {

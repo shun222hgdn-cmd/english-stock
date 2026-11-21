@@ -5,48 +5,55 @@ import StockForm from '../components/StockForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { PlusIcon } from '../components/Icons'
 import { filterStocks, sortByEnglish } from '../utils/search'
+import { filterByCategory } from '../utils/quiz'
+
+// 表示の切り替え（All / Words / Phrases）
+const FILTERS = [
+  { value: 'all', label: 'All', noun: '英単語・フレーズ' },
+  { value: 'word', label: 'Words', noun: '英単語' },
+  { value: 'phrase', label: 'Phrases', noun: 'フレーズ' },
+]
 
 /**
- * 英単語ストック画面・フレーズストック画面の共通部分。
- * category を変えるだけで、どちらの画面としても使える（同じコードを2回書かないため）。
+ * ストック画面（英単語とフレーズを1つの画面で管理する）。
+ * 上部の切り替えで All / Words / Phrases の表示を変え、＋ボタンでどちらも登録できる。
  *
  * @param {{
- *   category: 'word' | 'phrase',
- *   title: string,              // 画面タイトル（Words / Phrases）
- *   singular: string,           // フォームの見出し用（Word / Phrase）
- *   noun: string,               // 「英単語」「フレーズ」（メッセージ用）
- *   stocks: Array<object>,      // 全登録データ（この画面のカテゴリーだけをここで絞り込む）
+ *   stocks: Array<object>,                    // 表示中のフォルダの登録データ
+ *   filter: 'all' | 'word' | 'phrase',        // 表示の切り替え（画面を移動しても覚えておくため親が持つ）
+ *   onFilterChange: (filter: string) => void,
  *   onAdd: (input: object) => Promise<void>,
  *   onEdit: (id: string, input: object) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
  * }} props
  */
-export default function StockPage({ category, title, singular, noun, stocks, onAdd, onEdit, onDelete }) {
+export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete }) {
   const [searchQuery, setSearchQuery] = useState('')
   // 登録・編集フォームの状態（null: 閉じている / { mode: 'add' } / { mode: 'edit', stock }）
   const [editingStock, setEditingStock] = useState(null)
   // 削除確認ダイアログの対象（null: 閉じている）
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  // この画面のカテゴリーのデータだけ
-  const categoryStocks = useMemo(
-    () => stocks.filter((stock) => stock.category === category),
-    [stocks, category],
-  )
-  // 検索で絞り込み、アルファベット順に並べたもの
+  const { noun } = FILTERS.find((item) => item.value === filter) ?? FILTERS[0]
+
+  // 切り替えで絞り込んだデータ
+  const filteredStocks = useMemo(() => filterByCategory(stocks, filter), [stocks, filter])
+  // さらに検索で絞り込み、アルファベット順に並べたもの
   const visibleStocks = useMemo(
-    () => sortByEnglish(filterStocks(categoryStocks, searchQuery)),
-    [categoryStocks, searchQuery],
+    () => sortByEnglish(filterStocks(filteredStocks, searchQuery)),
+    [filteredStocks, searchQuery],
   )
 
   const isSearching = searchQuery.trim() !== ''
+  // 追加フォームの種類：Words / Phrases 表示中はその種類、All なら英語の内容から自動判定
+  const defaultCategory = filter === 'all' ? null : filter
 
-  // フォームの保存処理（カテゴリーは表示中の画面で自動的に決まる）
+  // フォームの保存処理（種類はフォームで選んだもの）
   async function handleSubmit(values) {
     if (editingStock.mode === 'edit') {
       await onEdit(editingStock.stock.id, values)
     } else {
-      await onAdd({ category, ...values })
+      await onAdd(values)
     }
   }
 
@@ -54,9 +61,9 @@ export default function StockPage({ category, title, singular, noun, stocks, onA
     <section className="page">
       <div className="page-header">
         <h1 className="page-title">
-          {title}
-          <span className="count-badge" aria-label={`${categoryStocks.length}件`}>
-            {categoryStocks.length}
+          Stock
+          <span className="count-badge" aria-label={`${filteredStocks.length}件`}>
+            {filteredStocks.length}
           </span>
         </h1>
         <button
@@ -70,19 +77,34 @@ export default function StockPage({ category, title, singular, noun, stocks, onA
         </button>
       </div>
 
+      {/* 表示の切り替え */}
+      <div className="segmented" role="group" aria-label="表示する種類">
+        {FILTERS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            className={`segmented-btn${filter === value ? ' is-active' : ''}`}
+            aria-pressed={filter === value}
+            onClick={() => onFilterChange(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <SearchBar value={searchQuery} onChange={setSearchQuery} label={`${noun}を検索`} />
 
       {/* 検索結果の件数（読み上げにも対応） */}
       <p className="result-count" aria-live="polite">
-        {isSearching ? `${visibleStocks.length} / ${categoryStocks.length} 件` : ''}
+        {isSearching ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
       </p>
 
-      {categoryStocks.length === 0 ? (
+      {filteredStocks.length === 0 ? (
         <div className="card empty-state">
           <p>まだ{noun}が登録されていません。</p>
           <button type="button" className="btn btn-primary" onClick={() => setEditingStock({ mode: 'add' })}>
             <PlusIcon size={18} />
-            <span>最初の{noun}を登録する</span>
+            <span>最初の{noun === '英単語・フレーズ' ? '1件' : noun}を登録する</span>
           </button>
         </div>
       ) : visibleStocks.length === 0 ? (
@@ -95,6 +117,8 @@ export default function StockPage({ category, title, singular, noun, stocks, onA
             <StockCard
               key={stock.id}
               stock={stock}
+              // All 表示のときだけ、Word / Phrase の印を付ける
+              showCategory={filter === 'all'}
               onEdit={() => setEditingStock({ mode: 'edit', stock })}
               onDelete={() => setDeleteTarget(stock)}
             />
@@ -105,9 +129,9 @@ export default function StockPage({ category, title, singular, noun, stocks, onA
       {editingStock && (
         <StockForm
           mode={editingStock.mode}
-          title={editingStock.mode === 'edit' ? `Edit ${singular}` : `Add a ${singular}`}
           initialValues={editingStock.mode === 'edit' ? editingStock.stock : undefined}
-          existingStocks={categoryStocks}
+          defaultCategory={defaultCategory}
+          existingStocks={stocks}
           onSubmit={handleSubmit}
           onClose={() => setEditingStock(null)}
         />

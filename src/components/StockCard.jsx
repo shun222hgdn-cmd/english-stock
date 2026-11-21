@@ -4,9 +4,14 @@ import { PencilIcon, TrashIcon } from './Icons'
  * 一覧の1件分のカード。英語を大きく、日本語訳を小さく表示する。
  * 長いフレーズも省略せず折り返して表示する。
  *
- * @param {{ stock: { english: string, japanese: string }, onEdit: () => void, onDelete: () => void }} props
+ * @param {{
+ *   stock: { category: string, english: string, japanese: string },
+ *   showCategory?: boolean,   // true のとき Word / Phrase の印を表示（All 表示用）
+ *   onEdit: () => void,
+ *   onDelete: () => void,
+ * }} props
  */
-export default function StockCard({ stock, onEdit, onDelete }) {
+export default function StockCard({ stock, showCategory = false, onEdit, onDelete }) {
   return (
     <li className="card stock-card">
       <div className="stock-text">
@@ -14,6 +19,9 @@ export default function StockCard({ stock, onEdit, onDelete }) {
           {stock.english}
         </p>
         <p className="stock-japanese" lang="ja">
+          {showCategory && (
+            <span className="stock-category">{stock.category === 'word' ? 'Word' : 'Phrase'}</span>
+          )}
           {stock.japanese}
         </p>
       </div>

@@ -51,11 +51,11 @@ export async function createStock({ folder_id, category, english, japanese }) {
   return data
 }
 
-/** 指定したIDの英語・日本語訳を更新する */
-export async function updateStock(id, { english, japanese }) {
+/** 指定したIDの種類・英語・日本語訳を更新する */
+export async function updateStock(id, { category, english, japanese }) {
   const { data, error } = await supabase
     .from(TABLE)
-    .update({ english, japanese })
+    .update({ category, english, japanese })
     .eq('id', id)
     .select(COLUMNS)
     .single()

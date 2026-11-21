@@ -5,8 +5,7 @@ import FolderDialog from './components/FolderDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import Words from './pages/Words'
-import Phrases from './pages/Phrases'
+import StockPage from './pages/StockPage'
 import Quiz from './pages/Quiz'
 import FolderSetup from './pages/FolderSetup'
 import { useAuth } from './hooks/useAuth'
@@ -59,6 +58,8 @@ function AuthGate() {
  */
 function MainApp({ userId, onSignOut }) {
   const [activePage, setActivePage] = useState('home')
+  // ストック画面の表示切り替え（All / Words / Phrases）。画面を移動しても覚えておく
+  const [stockFilter, setStockFilter] = useState('all')
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
@@ -98,8 +99,17 @@ function MainApp({ userId, onSignOut }) {
     return result
   }, [stocks])
 
+  /**
+   * 画面の移動。'words' / 'phrases' を指定すると、ストック画面をその種類で開く
+   * （ホームの件数カードや、復習画面の「登録する」ボタンから使う）。
+   */
   function navigate(page) {
-    setActivePage(page)
+    if (page === 'words' || page === 'phrases') {
+      setStockFilter(page === 'words' ? 'word' : 'phrase')
+      setActivePage('stock')
+    } else {
+      setActivePage(page)
+    }
     window.scrollTo(0, 0)
   }
 
@@ -173,10 +183,15 @@ function MainApp({ userId, onSignOut }) {
     }
     // key にフォルダIDを指定：フォルダを切り替えると検索や出題の状態がリセットされる
     switch (activePage) {
-      case 'words':
-        return <Words key={currentFolder.id} {...stockProps} />
-      case 'phrases':
-        return <Phrases key={currentFolder.id} {...stockProps} />
+      case 'stock':
+        return (
+          <StockPage
+            key={currentFolder.id}
+            {...stockProps}
+            filter={stockFilter}
+            onFilterChange={setStockFilter}
+          />
+        )
       case 'quiz':
         return <Quiz key={currentFolder.id} stocks={folderStocks} onNavigate={navigate} />
       default:

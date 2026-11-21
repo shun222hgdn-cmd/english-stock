@@ -38,14 +38,6 @@ export function BookIcon(props) {
   )
 }
 
-export function ChatIcon(props) {
-  return (
-    <Icon {...props}>
-      <path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z" />
-    </Icon>
-  )
-}
-
 export function ShuffleIcon(props) {
   return (
     <Icon {...props}>
