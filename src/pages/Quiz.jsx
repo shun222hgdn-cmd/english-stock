@@ -7,16 +7,26 @@ import {
   getQuestionAndAnswer,
   pickRandomStock,
 } from '../utils/quiz'
+import { loadChoice, saveChoice } from '../lib/preferences'
+
+// 出題範囲・出題方向として許可する値（保存された設定の確認用）
+const CATEGORY_VALUES = QUIZ_CATEGORIES.map((item) => item.value)
+const DIRECTION_VALUES = QUIZ_DIRECTIONS.map((item) => item.value)
 
 /**
  * ランダム出題画面。
  * 出題のたびにデータベースへ問い合わせず、取得済みの stocks から JavaScript で選ぶ。
+ * 出題範囲・出題方向は端末に保存し、画面を移動したり開き直したりしても前回の設定で始める。
  *
  * @param {{ stocks: Array<object> }} props
  */
 export default function Quiz({ stocks }) {
-  const [quizCategory, setQuizCategory] = useState('all') // 出題範囲（初期値：すべて）
-  const [quizDirection, setQuizDirection] = useState('ja-en') // 出題方向（初期値：日本語 → 英語）
+  // 出題範囲（前回の設定。初めては「すべて」）
+  const [quizCategory, setQuizCategory] = useState(() => loadChoice('quizCategory', CATEGORY_VALUES, 'all'))
+  // 出題方向（前回の設定。初めては「日本語 → 英語」）
+  const [quizDirection, setQuizDirection] = useState(() =>
+    loadChoice('quizDirection', DIRECTION_VALUES, 'ja-en'),
+  )
   const [currentId, setCurrentId] = useState(null) // 現在の問題のID
   const [showAnswer, setShowAnswer] = useState(false) // 解答を表示しているか
 
@@ -43,6 +53,7 @@ export default function Quiz({ stocks }) {
   function handleCategoryChange(category) {
     if (category === quizCategory) return
     setQuizCategory(category)
+    saveChoice('quizCategory', category)
     const next = pickRandomStock(filterByCategory(stocks, category), currentId)
     setCurrentId(next ? next.id : null)
     setShowAnswer(false)
@@ -52,6 +63,7 @@ export default function Quiz({ stocks }) {
   function handleDirectionChange(direction) {
     if (direction === quizDirection) return
     setQuizDirection(direction)
+    saveChoice('quizDirection', direction)
     setShowAnswer(false)
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createStock, deleteStock, fetchAllStocks, updateStock } from '../services/stockService'
 import { toErrorMessage } from '../utils/errors'
 
@@ -15,6 +15,10 @@ export function useStocks(userId) {
   const [error, setError] = useState('')
   // 「再読み込み」ボタンで値を変え、データを取得し直すためのカウンター
   const [reloadCount, setReloadCount] = useState(0)
+  // 登録・更新・削除のたびに増える番号（裏での再取得結果が古くなっていないかの判定に使う）
+  const changeVersionRef = useRef(0)
+  const loadingRef = useRef(true)
+  loadingRef.current = loading
 
   useEffect(() => {
     // 画面を離れた後や別ユーザーに切り替わった後に、古い通信結果を反映しないためのフラグ
@@ -43,28 +47,51 @@ export function useStocks(userId) {
 
   const reload = useCallback(() => setReloadCount((count) => count + 1), [])
 
+  /**
+   * 画面を出したまま、最新のデータに静かに入れ替える（他の端末で登録した分を反映する）。
+   * 読み込み中の表示は出さず、失敗しても今のデータのまま使い続ける。
+   * 取得中に登録・更新・削除が行われた場合は、古い結果で上書きしないよう結果を捨てる。
+   */
+  const refresh = useCallback(async () => {
+    if (loadingRef.current) return
+    const startVersion = changeVersionRef.current
+    try {
+      const data = await fetchAllStocks()
+      if (changeVersionRef.current === startVersion) setStocks(data)
+    } catch {
+      // 裏での再取得なので、失敗しても何もしない
+    }
+  }, [])
+
   /** 登録：保存に成功したら一覧に追加する（失敗時は例外をそのまま呼び出し元へ） */
   const addStock = useCallback(async (input) => {
+    changeVersionRef.current += 1
     const created = await createStock(input)
+    changeVersionRef.current += 1
     setStocks((prev) => [...prev, created])
   }, [])
 
   /** 更新：保存に成功したら一覧の該当データを置き換える */
   const editStock = useCallback(async (id, input) => {
+    changeVersionRef.current += 1
     const updated = await updateStock(id, input)
+    changeVersionRef.current += 1
     setStocks((prev) => prev.map((stock) => (stock.id === id ? updated : stock)))
   }, [])
 
   /** 削除：削除に成功したら一覧から取り除く */
   const removeStock = useCallback(async (id) => {
+    changeVersionRef.current += 1
     await deleteStock(id)
+    changeVersionRef.current += 1
     setStocks((prev) => prev.filter((stock) => stock.id !== id))
   }, [])
 
   /** フォルダを削除したとき：そのフォルダのデータを手元からも取り除く（DB側は自動で削除済み） */
   const forgetFolderStocks = useCallback((folderId) => {
+    changeVersionRef.current += 1
     setStocks((prev) => prev.filter((stock) => stock.folder_id !== folderId))
   }, [])
 
-  return { stocks, loading, error, reload, addStock, editStock, removeStock, forgetFolderStocks }
+  return { stocks, loading, error, reload, refresh, addStock, editStock, removeStock, forgetFolderStocks }
 }

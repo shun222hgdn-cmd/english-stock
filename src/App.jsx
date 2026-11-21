@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
@@ -13,6 +13,7 @@ import { useStocks } from './hooks/useStocks'
 import { useFolders } from './hooks/useFolders'
 import { isSupabaseConfigured } from './lib/supabase'
 import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
+import { loadChoice, saveChoice } from './lib/preferences'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
 
@@ -58,8 +59,14 @@ function AuthGate() {
  */
 function MainApp({ userId, onSignOut }) {
   const [activePage, setActivePage] = useState('home')
-  // ストック画面の表示切り替え（All / Words / Phrases）。画面を移動しても覚えておく
-  const [stockFilter, setStockFilter] = useState('all')
+  // ストック画面の表示切り替え（All / Words / Phrases）。端末に保存し、開き直しても前回の表示で始める
+  const [stockFilter, setStockFilterState] = useState(() =>
+    loadChoice('stockFilter', ['all', 'word', 'phrase'], 'all'),
+  )
+  function setStockFilter(filter) {
+    setStockFilterState(filter)
+    saveChoice('stockFilter', filter)
+  }
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
@@ -70,6 +77,28 @@ function MainApp({ userId, onSignOut }) {
   const foldersState = useFolders(userId)
   const { stocks, addStock, editStock, removeStock, forgetFolderStocks } = stocksState
   const { folders, addFolder, editFolder, removeFolder } = foldersState
+
+  // アプリに戻ってきたとき（タブの切り替え・スマホでアプリを開き直したとき）に、
+  // 最新のデータを裏で読み直す。他の端末で登録した分もそのまま反映される。
+  const refreshStocks = stocksState.refresh
+  const refreshFolders = foldersState.refresh
+  useEffect(() => {
+    let lastRefresh = Date.now()
+    function handleReturn() {
+      if (document.visibilityState !== 'visible') return
+      // 「表示された」と「フォーカスされた」が続けて起きても、1回だけ読み直す
+      if (Date.now() - lastRefresh < 5000) return
+      lastRefresh = Date.now()
+      refreshFolders()
+      refreshStocks()
+    }
+    document.addEventListener('visibilitychange', handleReturn)
+    window.addEventListener('focus', handleReturn)
+    return () => {
+      document.removeEventListener('visibilitychange', handleReturn)
+      window.removeEventListener('focus', handleReturn)
+    }
+  }, [refreshStocks, refreshFolders])
 
   const loading = stocksState.loading || foldersState.loading
   const error = foldersState.error || stocksState.error
