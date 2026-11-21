@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 
 const TABLE = 'stocks'
 // 画面で使う列だけを取得する
-const COLUMNS = 'id, category, english, japanese'
+const COLUMNS = 'id, folder_id, category, english, japanese'
 // 1回の通信で取得する最大件数（Supabase の既定の上限は1000件）
 const PAGE_SIZE = 1000
 
@@ -37,13 +37,13 @@ export async function fetchAllStocks() {
 }
 
 /**
- * 新しい登録データを追加する。
+ * 新しい登録データを、指定したフォルダに追加する。
  * user_id はデータベースの既定値（auth.uid()）で自動設定される。
  */
-export async function createStock({ category, english, japanese }) {
+export async function createStock({ folder_id, category, english, japanese }) {
   const { data, error } = await supabase
     .from(TABLE)
-    .insert({ category, english, japanese })
+    .insert({ folder_id, category, english, japanese })
     .select(COLUMNS)
     .single()
 

@@ -61,5 +61,10 @@ export function useStocks(userId) {
     setStocks((prev) => prev.filter((stock) => stock.id !== id))
   }, [])
 
-  return { stocks, loading, error, reload, addStock, editStock, removeStock }
+  /** フォルダを削除したとき：そのフォルダのデータを手元からも取り除く（DB側は自動で削除済み） */
+  const forgetFolderStocks = useCallback((folderId) => {
+    setStocks((prev) => prev.filter((stock) => stock.folder_id !== folderId))
+  }, [])
+
+  return { stocks, loading, error, reload, addStock, editStock, removeStock, forgetFolderStocks }
 }

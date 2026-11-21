@@ -1,15 +1,20 @@
 import { useMemo, useState } from 'react'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
+import FolderDialog from './components/FolderDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Words from './pages/Words'
 import Phrases from './pages/Phrases'
 import Quiz from './pages/Quiz'
+import FolderSetup from './pages/FolderSetup'
 import { useAuth } from './hooks/useAuth'
 import { useStocks } from './hooks/useStocks'
+import { useFolders } from './hooks/useFolders'
 import { isSupabaseConfigured } from './lib/supabase'
+import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
+import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
 
 /**
@@ -48,27 +53,77 @@ function AuthGate() {
 /**
  * ログイン後のメイン画面（ヘッダー・各ページ・下部ナビゲーション）。
  * GitHub Pages で再読み込み時に404にならないよう、URLではなく state で画面を切り替える。
+ *
+ * 1つのアカウントを複数人で使えるよう、データは「フォルダ」ごとに分けて表示する。
+ * どの画面も、選んでいるフォルダのデータだけを扱う。
  */
 function MainApp({ userId, onSignOut }) {
   const [activePage, setActivePage] = useState('home')
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
-  const { stocks, loading, error, reload, addStock, editStock, removeStock } = useStocks(userId)
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false)
+  // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
+  const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
+
+  const stocksState = useStocks(userId)
+  const foldersState = useFolders(userId)
+  const { stocks, addStock, editStock, removeStock, forgetFolderStocks } = stocksState
+  const { folders, addFolder, editFolder, removeFolder } = foldersState
+
+  const loading = stocksState.loading || foldersState.loading
+  const error = foldersState.error || stocksState.error
+
+  // 表示中のフォルダと、そのフォルダのデータ
+  const currentFolder = pickCurrentFolder(folders, selectedFolderId)
+  const folderStocks = useMemo(
+    () => (currentFolder ? filterByFolder(stocks, currentFolder.id) : []),
+    [stocks, currentFolder],
+  )
 
   // 登録件数は stocks から計算する（固定値や別の状態は使わない）
   const counts = useMemo(() => {
     let word = 0
     let phrase = 0
-    for (const stock of stocks) {
+    for (const stock of folderStocks) {
       if (stock.category === 'word') word += 1
       else if (stock.category === 'phrase') phrase += 1
     }
     return { word, phrase }
+  }, [folderStocks])
+
+  // フォルダごとの件数（フォルダ切り替え画面に表示）
+  const folderCounts = useMemo(() => {
+    const result = {}
+    for (const stock of stocks) result[stock.folder_id] = (result[stock.folder_id] ?? 0) + 1
+    return result
   }, [stocks])
 
   function navigate(page) {
     setActivePage(page)
     window.scrollTo(0, 0)
+  }
+
+  function selectFolder(folderId) {
+    setSelectedFolderId(folderId)
+    saveFolderPreference(userId, folderId)
+  }
+
+  // 新しいフォルダを作って、そのフォルダに切り替える（最初のフォルダ作成画面用）
+  async function createFirstFolder(name) {
+    const created = await addFolder(name)
+    selectFolder(created.id)
+    navigate('home')
+  }
+
+  // フォルダを削除したら、中のデータも手元から消す（データベース側は自動で削除される）
+  async function deleteFolder(folderId) {
+    await removeFolder(folderId)
+    forgetFolderStocks(folderId)
+  }
+
+  function reload() {
+    stocksState.reload()
+    foldersState.reload()
   }
 
   async function handleSignOut() {
@@ -104,23 +159,41 @@ function MainApp({ userId, onSignOut }) {
         </div>
       )
     }
+    // フォルダが1つも無い（新しいアカウント）→ 最初のフォルダを作ってもらう
+    if (!currentFolder) {
+      return <FolderSetup onCreate={createFirstFolder} />
+    }
 
-    const stockProps = { stocks, onAdd: addStock, onEdit: editStock, onDelete: removeStock }
+    const stockProps = {
+      stocks: folderStocks,
+      // 登録は表示中のフォルダに入れる
+      onAdd: (input) => addStock({ ...input, folder_id: currentFolder.id }),
+      onEdit: editStock,
+      onDelete: removeStock,
+    }
+    // key にフォルダIDを指定：フォルダを切り替えると検索や出題の状態がリセットされる
     switch (activePage) {
       case 'words':
-        return <Words {...stockProps} />
+        return <Words key={currentFolder.id} {...stockProps} />
       case 'phrases':
-        return <Phrases {...stockProps} />
+        return <Phrases key={currentFolder.id} {...stockProps} />
       case 'quiz':
-        return <Quiz stocks={stocks} onNavigate={navigate} />
+        return <Quiz key={currentFolder.id} stocks={folderStocks} onNavigate={navigate} />
       default:
         return <Home wordCount={counts.word} phraseCount={counts.phrase} onNavigate={navigate} />
     }
   }
 
+  const showMenu = !loading && !error && Boolean(currentFolder)
+
   return (
     <div className="app-shell">
-      <Header onSignOut={handleSignOut} signingOut={signingOut} />
+      <Header
+        folderName={showMenu ? currentFolder.name : undefined}
+        onOpenFolders={() => setFolderDialogOpen(true)}
+        onSignOut={handleSignOut}
+        signingOut={signingOut}
+      />
       <main className="app-main">
         {signOutError && (
           <p className="alert" role="alert">
@@ -129,7 +202,20 @@ function MainApp({ userId, onSignOut }) {
         )}
         {renderPage()}
       </main>
-      <Navigation activePage={activePage} onNavigate={navigate} />
+      {showMenu && <Navigation activePage={activePage} onNavigate={navigate} />}
+
+      {folderDialogOpen && showMenu && (
+        <FolderDialog
+          folders={folders}
+          currentId={currentFolder.id}
+          counts={folderCounts}
+          onSelect={selectFolder}
+          onAdd={addFolder}
+          onRename={editFolder}
+          onDelete={deleteFolder}
+          onClose={() => setFolderDialogOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -712,6 +712,187 @@ code {
   gap: 12px;
 }
 
+/* ---------- フォルダ ---------- */
+/* ヘッダーのフォルダ切り替えボタン（例：📁 しゅん ▾） */
+.brand {
+  flex-shrink: 0;
+}
+
+.folder-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 55%;
+  min-height: 40px;
+  margin-left: auto;
+  padding: 6px 10px 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-card);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.folder-btn svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.folder-btn svg:last-child {
+  color: var(--color-sub);
+}
+
+.folder-btn:hover {
+  border-color: var(--color-accent);
+}
+
+/* 長いフォルダ名は「…」で省略する */
+.folder-btn-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 幅の狭いスマホでは「English Stock」「Logout」の文字を省き、アイコンだけにする */
+@media (max-width: 420px) {
+  .brand-text,
+  .logout-label {
+    display: none;
+  }
+}
+
+.folder-lead {
+  margin: -4px 0 12px;
+  font-size: 0.9rem;
+}
+
+.folder-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-card);
+  overflow: hidden;
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 0;
+}
+
+.folder-row + .folder-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.folder-row-danger {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
+.folder-select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.folder-select:hover:not(:disabled) {
+  background-color: var(--color-secondary);
+}
+
+.folder-select svg {
+  flex-shrink: 0;
+  color: var(--color-sub);
+}
+
+.folder-row.is-current .folder-select {
+  font-weight: 700;
+}
+
+.folder-row.is-current .folder-select svg {
+  color: var(--color-accent);
+}
+
+.folder-select-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-select-count {
+  margin-left: auto;
+  color: var(--color-sub);
+  font-size: 0.85rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.folder-delete-text {
+  color: var(--color-danger);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.folder-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.folder-rename {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+}
+
+.folder-add {
+  display: flex;
+  gap: 8px;
+}
+
+.folder-add .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-add .btn {
+  flex-shrink: 0;
+}
+
+/* 最初のフォルダ作成画面 */
+.folder-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.folder-setup .field {
+  margin-bottom: 0;
+}
+
+.folder-setup-icon {
+  color: var(--color-accent);
+}
+
 /* ---------- 下部ナビゲーション ---------- */
 .bottom-nav {
   position: fixed;
