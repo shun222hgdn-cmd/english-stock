@@ -912,6 +912,24 @@ code {
   opacity: 0.75;
 }
 
+/* ---------- パスワード変更 ---------- */
+.header-icon-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+/* フォルダ切り替えボタンがある画面では右寄せ、無い画面ではパスワードボタンを右寄せ */
+.app-header-inner > .brand + .header-icon-btn {
+  margin-left: auto;
+}
+
+.password-done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* ---------- 下部ナビゲーション ---------- */
 .bottom-nav {
   position: fixed;

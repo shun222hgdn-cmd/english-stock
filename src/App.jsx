@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
+import PasswordDialog from './components/PasswordDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
 import Home from './pages/Home'
@@ -33,7 +34,7 @@ export default function App() {
  * - ログイン済み：メイン画面
  */
 function AuthGate() {
-  const { session, authLoading, signIn, signOut } = useAuth()
+  const { session, authLoading, signIn, signOut, changePassword } = useAuth()
 
   if (authLoading) {
     return (
@@ -47,7 +48,15 @@ function AuthGate() {
 
   // key にユーザーIDを指定：ユーザーが変わると MainApp が作り直され、
   // 前のユーザーの登録データ・出題状態・画面状態がすべて消える
-  return <MainApp key={session.user.id} userId={session.user.id} onSignOut={signOut} />
+  return (
+    <MainApp
+      key={session.user.id}
+      userId={session.user.id}
+      email={session.user.email ?? ''}
+      onSignOut={signOut}
+      onChangePassword={changePassword}
+    />
+  )
 }
 
 /**
@@ -57,7 +66,7 @@ function AuthGate() {
  * 1つのアカウントを複数人で使えるよう、データは「フォルダ」ごとに分けて表示する。
  * どの画面も、選んでいるフォルダのデータだけを扱う。
  */
-function MainApp({ userId, onSignOut }) {
+function MainApp({ userId, email, onSignOut, onChangePassword }) {
   const [activePage, setActivePage] = useState('home')
   // ストック画面の表示切り替え（All / Words / Phrases）。端末に保存し、開き直しても前回の表示で始める
   const [stockFilter, setStockFilterState] = useState(() =>
@@ -70,6 +79,7 @@ function MainApp({ userId, onSignOut }) {
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
 
@@ -235,6 +245,7 @@ function MainApp({ userId, onSignOut }) {
       <Header
         folderName={showMenu ? currentFolder.name : undefined}
         onOpenFolders={() => setFolderDialogOpen(true)}
+        onOpenPassword={() => setPasswordDialogOpen(true)}
         onSignOut={handleSignOut}
         signingOut={signingOut}
       />
@@ -258,6 +269,14 @@ function MainApp({ userId, onSignOut }) {
           onRename={editFolder}
           onDelete={deleteFolder}
           onClose={() => setFolderDialogOpen(false)}
+        />
+      )}
+
+      {passwordDialogOpen && (
+        <PasswordDialog
+          email={email}
+          onChangePassword={onChangePassword}
+          onClose={() => setPasswordDialogOpen(false)}
         />
       )}
     </div>

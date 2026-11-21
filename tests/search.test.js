@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { filterStocks, sortByEnglish } from '../src/utils/search.js'
-import { cleanStockInput, findDuplicate, guessCategory } from '../src/utils/validation.js'
+import { cleanStockInput, findDuplicate, guessCategory, validateNewPassword } from '../src/utils/validation.js'
 
 const stocks = [
   { id: '1', category: 'word', english: 'Prioritize', japanese: '優先する' },
@@ -109,4 +109,14 @@ test('種類の自動判定：スペースを含めばフレーズ、含まな�
   assert.equal(guessCategory('It depends on the situation.'), 'phrase')
   assert.equal(guessCategory('take off'), 'phrase')
   assert.equal(guessCategory(''), 'word')
+})
+
+test('パスワード変更：8文字以上で、確認用と一致すれば OK', () => {
+  assert.equal(validateNewPassword('abcd1234', 'abcd1234'), '')
+})
+
+test('パスワード変更：空欄・8文字未満・確認用と不一致はエラー', () => {
+  assert.ok(validateNewPassword('', ''))
+  assert.ok(validateNewPassword('abc1234', 'abc1234'))
+  assert.ok(validateNewPassword('abcd1234', 'abcd12345'))
 })

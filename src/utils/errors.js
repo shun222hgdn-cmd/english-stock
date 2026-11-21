@@ -10,6 +10,15 @@ export function toErrorMessage(error, fallback = 'エラーが発生しました
   if (/invalid login credentials/i.test(message)) {
     return 'メールアドレスまたはパスワードが正しくありません。'
   }
+  if (/should be different from the old password|same_password/i.test(message + code)) {
+    return '今と同じパスワードです。別のパスワードにしてください。'
+  }
+  if (/password should be at least|weak[_ ]password/i.test(message + code)) {
+    return 'パスワードが短すぎるか、推測されやすいです。もっと長く複雑なパスワードにしてください。'
+  }
+  if (/reauthenticat/i.test(message + code)) {
+    return '安全のため、いったんログアウトしてログインし直してから変更してください。'
+  }
   if (/email not confirmed/i.test(message)) {
     return 'メールアドレスの確認が完了していません。Supabase Dashboard でユーザーを確認済みにしてください。'
   }

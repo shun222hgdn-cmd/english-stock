@@ -42,3 +42,23 @@ export function findDuplicate(stocks, english, excludeId) {
   if (!key) return null
   return stocks.find((stock) => stock.id !== excludeId && stock.english.trim().toLowerCase() === key) ?? null
 }
+
+/** パスワードの最小文字数 */
+export const PASSWORD_MIN_LENGTH = 8
+
+/**
+ * 新しいパスワードの入力チェック。
+ * - 8文字以上
+ * - 確認用の入力と一致すること
+ * 問題がなければ空文字を返す。パスワードの前後の空白も、そのまま1文字として扱う（取り除かない）。
+ *
+ * @param {string} password 新しいパスワード
+ * @param {string} confirmation 確認用にもう一度入力したもの
+ */
+export function validateNewPassword(password, confirmation) {
+  const value = String(password ?? '')
+  if (value.length === 0) return '新しいパスワードを入力してください。'
+  if (value.length < PASSWORD_MIN_LENGTH) return `パスワードは${PASSWORD_MIN_LENGTH}文字以上にしてください。`
+  if (value !== String(confirmation ?? '')) return '確認用のパスワードが一致しません。'
+  return ''
+}

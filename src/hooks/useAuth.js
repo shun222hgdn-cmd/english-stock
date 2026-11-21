@@ -47,5 +47,14 @@ export function useAuth() {
     if (error) throw error
   }, [])
 
-  return { session, authLoading, signIn, signOut }
+  /**
+   * ログイン中のユーザーのパスワードを変更する（失敗時は例外を投げる）。
+   * 他の端末のログインはそのまま使い続けられる。次にログインするときから新しいパスワードになる。
+   */
+  const changePassword = useCallback(async (password) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }, [])
+
+  return { session, authLoading, signIn, signOut, changePassword }
 }
