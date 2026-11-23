@@ -20,6 +20,8 @@
   --red: #b53a2c; /* 削除・エラー（赤ペン） */
   --red-soft: rgba(181, 58, 44, 0.08);
   --amber: #9a6a12; /* 注意（重複など） */
+  --card-rule: rgba(43, 94, 167, 0.12); /* 単語カードの青い罫線 */
+  --card-red: rgba(181, 58, 44, 0.45); /* 単語カードの上の赤い線 */
 
   --font-ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Noto Sans JP', Meiryo,
     system-ui, sans-serif;
@@ -55,6 +57,8 @@
     --red: #e58a7c;
     --red-soft: rgba(229, 138, 124, 0.1);
     --amber: #e0b35a;
+    --card-rule: rgba(141, 177, 230, 0.08);
+    --card-red: rgba(229, 138, 124, 0.35);
     color-scheme: dark;
   }
 }
@@ -165,7 +169,7 @@ button:disabled {
   margin: 0 auto;
   padding: 20px 16px;
   /* 下部の固定ナビゲーションにコンテンツが隠れないよう余白を確保 */
-  padding-bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-height) + 96px + env(safe-area-inset-bottom));
 }
 
 .page {
@@ -482,48 +486,42 @@ button:disabled {
   color: var(--ink);
 }
 
-/* 品詞の選択（任意）：押して選ぶ小さな札。選択中は青ペン */
-.pos-field {
-  margin: 0 0 12px;
-  padding: 0;
-  border: none;
-  min-width: 0;
-}
-
-.pos-legend {
-  margin-bottom: 6px;
-  padding: 0;
-  color: var(--ink-faint);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.pos-list {
+/* ラベルの行（左：英語 / 右：品詞のプルダウン） */
+.field-label-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
 }
 
-.pos-chip {
-  min-height: 34px;
-  padding: 4px 10px;
-  border: 1px solid var(--rule-strong);
+/* 品詞のプルダウン：英語欄の右上に小さく。選ぶと青ペンの文字になる */
+.pos-select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 26px;
+  padding: 1px 22px 1px 8px;
+  border: 1px solid var(--rule);
   border-radius: 4px;
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 10px center, right 6px center;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  cursor: pointer;
 }
 
-.pos-chip:hover:not(:disabled) {
-  color: var(--ink);
-  border-color: var(--ink-faint);
-}
-
-.pos-chip.is-active {
+.pos-select:has(option:checked:not([value=''])) {
   border-color: var(--pen);
-  background-color: var(--pen-soft);
   color: var(--pen);
-  font-weight: 600;
+}
+
+.pos-select:focus-visible {
+  outline: 2px solid var(--pen);
+  outline-offset: 1px;
 }
 
 /* コメント欄は少し小さめの文字 */
@@ -669,6 +667,36 @@ code {
   border-bottom: 1px solid var(--rule);
 }
 
+/* ---------- 追加ボタン（右下に大きく。親指で押しやすい位置） ---------- */
+.fab {
+  position: fixed;
+  z-index: 11;
+  right: max(18px, calc((100vw - var(--content-width)) / 2 + 18px));
+  bottom: calc(var(--nav-height) + 18px + env(safe-area-inset-bottom));
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--pen);
+  color: var(--on-pen);
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.12s, filter 0.15s;
+}
+
+.fab:hover {
+  filter: brightness(1.08);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab svg {
+  stroke-width: 2.2;
+}
+
 /* ---------- 検索 ---------- */
 .search-bar {
   display: flex;
@@ -710,6 +738,27 @@ code {
 
 .result-count:empty {
   display: none;
+}
+
+/* ---------- 単語帳の一覧（頭文字ごとの見出し + 1行 = 1件。押すと編集） ---------- */
+.index-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 辞書の見出しのような頭文字 */
+.index-letter {
+  margin: 0 0 4px 2px;
+  color: var(--pen);
+  font-family: var(--font-en);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.index-group .ruled-list {
+  border-top-color: var(--rule-strong);
 }
 
 /* ---------- ストック一覧（1行 = 1件。押すと編集） ---------- */
@@ -773,11 +822,6 @@ code {
   overflow-wrap: anywhere;
 }
 
-.stock-row-arrow {
-  flex-shrink: 0;
-  color: var(--ink-faint);
-}
-
 .empty-state {
   padding: 28px 16px;
   color: var(--ink-soft);
@@ -832,10 +876,14 @@ code {
   justify-content: center;
   gap: 10px;
   padding: 40px 20px 32px;
+  /* 罫線（青い横線）と、上の赤い線で「単語カード」らしく */
   background-color: var(--sheet);
+  background-image: linear-gradient(to bottom, transparent 46px, var(--card-red) 46px, var(--card-red) 47px, transparent 47px),
+    repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--card-rule) 31px, var(--card-rule) 32px);
+  background-position: 0 0, 0 16px;
   border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: 0 1px 0 var(--rule), 0 6px 18px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 var(--rule), 0 8px 20px -14px rgba(0, 0, 0, 0.35);
   color: var(--ink);
   text-align: center;
   overflow-wrap: anywhere;

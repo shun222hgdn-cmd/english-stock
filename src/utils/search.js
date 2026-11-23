@@ -30,3 +30,22 @@ export function sortByEnglish(stocks) {
       String(a.id).localeCompare(String(b.id)),
   )
 }
+
+/**
+ * 並び替え済みの一覧を、英語の頭文字（A〜Z）ごとにまとめる（辞書の見出しのように表示するため）。
+ * アルファベット以外で始まるもの（数字・記号など）は「#」にまとめる。元の並び順は保つ。
+ *
+ * @param {Array<{ english: string }>} stocks 並び替え済みのデータ
+ * @returns {Array<{ initial: string, items: Array<object> }>}
+ */
+export function groupByInitial(stocks) {
+  const groups = []
+  for (const stock of stocks) {
+    const first = String(stock.english ?? '').trim().charAt(0).toUpperCase()
+    const initial = /^[A-Z]$/.test(first) ? first : '#'
+    const last = groups[groups.length - 1]
+    if (last && last.initial === initial) last.items.push(stock)
+    else groups.push({ initial, items: [stock] })
+  }
+  return groups
+}

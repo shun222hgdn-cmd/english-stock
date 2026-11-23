@@ -1,5 +1,3 @@
-import { ChevronRightIcon } from './Icons'
-
 /**
  * 一覧の1件分の行。英語を上、日本語訳を下に表示する。行全体を押すと編集画面が開く。
  * 長いフレーズも省略せず折り返して表示する。
@@ -28,7 +26,6 @@ export default function StockCard({ stock, showCategory = false, onEdit }) {
           </span>
           {stock.note && <span className="stock-note">{stock.note}</span>}
         </span>
-        <ChevronRightIcon size={18} className="stock-row-arrow" />
       </button>
     </li>
   )

@@ -240,13 +240,31 @@ export default function StockForm({
             value={english}
             onChange={changeEnglish}
             onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
-            placeholder={category === 'word' ? 'ambiguous' : 'It depends on the situation.'}
             lang="en"
             autoCapitalize="sentences"
             enterKeyHint="next"
             error={fieldErrors.english}
             readOnly={saving}
             autoFocus
+            labelExtra={
+              // 品詞（任意・単語のときだけ）：英語欄の右上に小さく
+              category === 'word' && (
+                <select
+                  className="pos-select"
+                  value={partOfSpeech ?? ''}
+                  onChange={(e) => setPartOfSpeech(e.target.value || null)}
+                  aria-label="品詞（任意）"
+                  disabled={saving}
+                >
+                  <option value="">品詞</option>
+                  {PARTS_OF_SPEECH.map((pos) => (
+                    <option key={pos} value={pos}>
+                      {pos}
+                    </option>
+                  ))}
+                </select>
+              )
+            }
           >
             {duplicate && (
               <p className="field-note" role="status">
@@ -263,33 +281,12 @@ export default function StockForm({
             value={japanese}
             onChange={changeJapanese}
             onKeyDown={(e) => handleKeyDown(e, () => save(false))}
-            placeholder={category === 'word' ? '曖昧な' : '状況によります。'}
             lang="ja"
             enterKeyHint="done"
             error={fieldErrors.japanese}
             readOnly={saving}
           />
         </div>
-
-        {/* 品詞（任意・単語のときだけ）：押して選ぶ。もう一度押すと解除 */}
-        {category === 'word' && (
-          <fieldset className="pos-field" disabled={saving}>
-            <legend className="pos-legend">品詞（任意）</legend>
-            <div className="pos-list">
-              {PARTS_OF_SPEECH.map((pos) => (
-                <button
-                  key={pos}
-                  type="button"
-                  className={`pos-chip${partOfSpeech === pos ? ' is-active' : ''}`}
-                  aria-pressed={partOfSpeech === pos}
-                  onClick={() => setPartOfSpeech((current) => (current === pos ? null : pos))}
-                >
-                  {pos}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        )}
 
         {/* コメント（任意）：Enter は改行 */}
         <div className="field-group">
@@ -305,7 +302,6 @@ export default function StockForm({
                 setNote(e.target.value)
                 if (submitError) setSubmitError('')
               }}
-              placeholder="例：会議でよく使う／似た表現 vague"
               maxLength={NOTE_MAX_LENGTH}
               readOnly={saving}
             />
@@ -384,7 +380,19 @@ export default function StockForm({
 /**
  * ラベル・自動で伸びる入力欄・クリアボタン・エラー表示をまとめた入力項目。
  */
-function InputField({ id, label, hint, inputRef, value, onChange, error, autoFocus, children, ...textareaProps }) {
+function InputField({
+  id,
+  label,
+  labelExtra,
+  hint,
+  inputRef,
+  value,
+  onChange,
+  error,
+  autoFocus,
+  children,
+  ...textareaProps
+}) {
   const errorId = `${id}-error`
 
   // × ボタン：入力を消して、すぐ打ち直せるようにカーソルを戻す
@@ -401,9 +409,12 @@ function InputField({ id, label, hint, inputRef, value, onChange, error, autoFoc
         if (e.target === e.currentTarget) inputRef.current?.focus()
       }}
     >
-      <label htmlFor={id} className="field-label">
-        {label}
-      </label>
+      <div className="field-label-row">
+        <label htmlFor={id} className="field-label">
+          {label}
+        </label>
+        {labelExtra}
+      </div>
       <AutoTextarea
         ref={inputRef}
         id={id}

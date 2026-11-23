@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
-import { filterStocks, sortByEnglish } from '../utils/search'
+import { filterStocks, groupByInitial, sortByEnglish } from '../utils/search'
 import { filterByCategory } from '../utils/quiz'
+import { PlusIcon } from '../components/Icons'
 
 // 表示の切り替え（すべて / 単語 / フレーズ）
 const FILTERS = [
@@ -63,17 +64,18 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
 
   return (
     <section className="page">
-      <div className="page-header">
-        <h1 className="page-title">単語帳</h1>
-        <button
-          type="button"
-          className="btn btn-text"
-          onClick={() => setEditingStock({ mode: 'add' })}
-          aria-label={`${noun}を追加`}
-        >
-          ＋ 追加
-        </button>
-      </div>
+      <h1 className="page-title">単語帳</h1>
+
+      {/* 追加ボタン：右下に大きく（親指で押しやすい位置） */}
+      <button
+        type="button"
+        className="fab"
+        onClick={() => setEditingStock({ mode: 'add' })}
+        aria-label={`${noun}を追加`}
+        title="追加"
+      >
+        <PlusIcon size={28} />
+      </button>
 
       {/* 表示の切り替え */}
       <div className="segmented" role="group" aria-label="表示する種類">
@@ -103,17 +105,27 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
       {filteredStocks.length === 0 ? null : visibleStocks.length === 0 ? (
         <p className="empty-state">「{searchQuery.trim()}」に一致する{noun}はありません。</p>
       ) : (
-        <ul className="ruled-list">
-          {visibleStocks.map((stock) => (
-            <StockCard
-              key={stock.id}
-              stock={stock}
-              // 「すべて」表示のときだけ、単語 / フレーズ の印を付ける
-              showCategory={filter === 'all'}
-              onEdit={() => setEditingStock({ mode: 'edit', stock })}
-            />
+        // 辞書のように、頭文字（A〜Z）ごとに見出しを付けて並べる
+        <div className="index-list">
+          {groupByInitial(visibleStocks).map(({ initial, items }) => (
+            <section key={initial} className="index-group" aria-label={`${initial} から始まる${noun}`}>
+              <h2 className="index-letter" lang="en">
+                {initial}
+              </h2>
+              <ul className="ruled-list">
+                {items.map((stock) => (
+                  <StockCard
+                    key={stock.id}
+                    stock={stock}
+                    // 「すべて」表示のときだけ、単語 / フレーズ の印を付ける
+                    showCategory={filter === 'all'}
+                    onEdit={() => setEditingStock({ mode: 'edit', stock })}
+                  />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
 
       {editingStock && (

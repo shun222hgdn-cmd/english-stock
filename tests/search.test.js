@@ -2,7 +2,7 @@
 // 実行方法: npm test
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { filterStocks, sortByEnglish } from '../src/utils/search.js'
+import { filterStocks, groupByInitial, sortByEnglish } from '../src/utils/search.js'
 import {
   cleanStockExtras,
   cleanStockInput,
@@ -152,4 +152,28 @@ test('コメント：前後の空白を取り除き、空なら null', () => {
 test('コメント：上限の文字数まではOK、超えるとエラー', () => {
   assert.equal(cleanStockExtras({ category: 'word', note: 'あ'.repeat(NOTE_MAX_LENGTH) }).error, '')
   assert.ok(cleanStockExtras({ category: 'word', note: 'あ'.repeat(NOTE_MAX_LENGTH + 1) }).error)
+})
+
+test('一覧の見出し：頭文字ごとにまとまり、並び順は保たれる', () => {
+  const groups = groupByInitial(
+    sortByEnglish([
+      { id: '1', english: 'apple' },
+      { id: '2', english: 'Ambiguous' },
+      { id: '3', english: 'break the ice' },
+      { id: '4', english: "'cause" },
+      { id: '5', english: '24/7' },
+    ]),
+  )
+  assert.deepEqual(
+    groups.map((g) => [g.initial, g.items.map((s) => s.id)]),
+    [
+      ['#', ['4', '5']],
+      ['A', ['2', '1']],
+      ['B', ['3']],
+    ],
+  )
+})
+
+test('一覧の見出し：0件なら見出しも無い', () => {
+  assert.deepEqual(groupByInitial([]), [])
 })
