@@ -8,6 +8,7 @@ import {
   pickRandomStock,
 } from '../utils/quiz'
 import { loadChoice, saveChoice } from '../lib/preferences'
+import { stopSpeaking } from '../utils/speech'
 
 // 出題範囲・出題方向として許可する値（保存された設定の確認用）
 const CATEGORY_VALUES = QUIZ_CATEGORIES.map((item) => item.value)
@@ -44,6 +45,7 @@ export default function Quiz({ stocks }) {
 
   // 次の問題：直前と同じ問題を避けてランダムに選び、解答を隠す
   function handleNext() {
+    stopSpeaking()
     const next = pickRandomStock(candidates, currentId)
     setCurrentId(next ? next.id : null)
     setShowAnswer(false)
@@ -116,6 +118,7 @@ export default function Quiz({ stocks }) {
             answer={qa.answer}
             questionLang={isJaToEn ? 'ja' : 'en'}
             answerLang={isJaToEn ? 'en' : 'ja'}
+            english={currentQuestion.english}
             showAnswer={showAnswer}
             categoryLabel={
               currentQuestion.category === 'word'

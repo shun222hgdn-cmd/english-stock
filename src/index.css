@@ -1187,6 +1187,62 @@ code {
   color: var(--pen);
 }
 
+/* ---------- 発音 ---------- */
+/* 単語帳の行：左に「押すと編集」の部分、右端に 🔊 */
+.stock-item {
+  display: flex;
+  align-items: center;
+}
+
+.stock-item .stock-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.speak-btn {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+}
+
+.speak-btn:hover:not(:disabled) {
+  color: var(--pen);
+}
+
+.speak-btn:active {
+  color: var(--pen);
+}
+
+/* 暗記カードの右上に重ねる 🔊 */
+.quiz-card-wrap {
+  position: relative;
+}
+
+.quiz-speak {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: var(--pen);
+}
+
+/* 設定の「発音」 */
+.settings-speech {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 4px;
+}
+
+.settings-speech-title {
+  width: 100%;
+  color: var(--ink);
+}
+
+.settings-speech .lang-switch-btn {
+  font-family: var(--font-ja);
+  font-size: 0.82rem;
+}
+
 /* ---------- 設定 ---------- */
 .settings-row {
   width: 100%;
