@@ -1049,6 +1049,56 @@ code {
   flex-shrink: 0;
 }
 
+/* 鍵がかかっているフォルダの鍵ボタンは青ペン色 */
+.folder-row .icon-btn.is-locked {
+  color: var(--pen);
+}
+
+.folder-lock-title {
+  font-weight: 600;
+}
+
+.folder-lock-note {
+  font-size: 0.82rem;
+}
+
+/* 鍵付きフォルダを開く画面 */
+.locked-folder {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  max-width: 340px;
+  width: 100%;
+  margin: 48px auto 0;
+  text-align: center;
+}
+
+.locked-folder-icon {
+  color: var(--ink-faint);
+}
+
+.locked-folder-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.locked-folder-lead {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.locked-folder .alert {
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.locked-folder-switch {
+  align-self: center;
+  font-size: 0.88rem;
+}
+
 /* 最初のフォルダ作成画面 */
 .folder-setup {
   display: flex;

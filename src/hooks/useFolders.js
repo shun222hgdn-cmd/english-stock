@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createFolder, deleteFolder, fetchFolders, renameFolder } from '../services/folderService'
+import {
+  clearFolderLockWithAdmin,
+  createFolder,
+  deleteFolder,
+  fetchFolders,
+  renameFolder,
+  setFolderLock,
+} from '../services/folderService'
 import { sortFolders } from '../utils/folders'
 import { toErrorMessage } from '../utils/errors'
 
@@ -82,5 +89,24 @@ export function useFolders(userId) {
     setFolders((prev) => prev.filter((folder) => folder.id !== id))
   }, [])
 
-  return { folders, loading, error, reload, refresh, addFolder, editFolder, removeFolder }
+  /** 鍵の設定・解除（lockHash が null なら解除） */
+  const setLock = useCallback(async (id, lockHash) => {
+    changeVersionRef.current += 1
+    const updated = await setFolderLock(id, lockHash)
+    changeVersionRef.current += 1
+    setFolders((prev) => sortFolders(prev.map((folder) => (folder.id === id ? updated : folder))))
+  }, [])
+
+  /** 管理者パスワードで鍵を外す（結果の文字を返す。'ok' のときだけ手元の鍵も外す） */
+  const clearLockWithAdmin = useCallback(async (id, adminPassword) => {
+    changeVersionRef.current += 1
+    const result = await clearFolderLockWithAdmin(id, adminPassword)
+    changeVersionRef.current += 1
+    if (result === 'ok') {
+      setFolders((prev) => prev.map((folder) => (folder.id === id ? { ...folder, lock_hash: null } : folder)))
+    }
+    return result
+  }, [])
+
+  return { folders, loading, error, reload, refresh, addFolder, editFolder, removeFolder, setLock, clearLockWithAdmin }
 }

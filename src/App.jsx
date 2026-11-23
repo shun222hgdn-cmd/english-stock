@@ -9,12 +9,14 @@ import Login from './pages/Login'
 import StockPage from './pages/StockPage'
 import Quiz from './pages/Quiz'
 import FolderSetup from './pages/FolderSetup'
+import LockedFolder from './pages/LockedFolder'
 import { useAuth } from './hooks/useAuth'
 import { useStocks } from './hooks/useStocks'
 import { useFolders } from './hooks/useFolders'
 import { isSupabaseConfigured } from './lib/supabase'
 import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
 import { toDisplayId } from './utils/loginId'
+import { hashFolderPassword, verifyFolderPassword } from './utils/folderLock'
 import { loadChoice, saveChoice } from './lib/preferences'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
@@ -84,11 +86,13 @@ function MainApp({ userId, email, onSignOut }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
+  // 鍵付きフォルダのうち、今開いているもの（別のフォルダに切り替えるか、アプリを閉じると閉じる）
+  const [unlockedFolderId, setUnlockedFolderId] = useState(null)
 
   const stocksState = useStocks(userId)
   const foldersState = useFolders(userId)
   const { stocks, addStock, editStock, removeStock, forgetFolderStocks } = stocksState
-  const { folders, addFolder, editFolder, removeFolder } = foldersState
+  const { folders, addFolder, editFolder, removeFolder, setLock, clearLockWithAdmin } = foldersState
 
   // アプリに戻ってきたとき（タブの切り替え・スマホでアプリを開き直したとき）に、
   // 最新のデータを裏で読み直す。他の端末で登録した分もそのまま反映される。
@@ -136,8 +140,44 @@ function MainApp({ userId, email, onSignOut }) {
   }
 
   function selectFolder(folderId) {
+    // 別のフォルダに切り替えたら、開いていた鍵付きフォルダはまた閉じる
+    if (folderId !== unlockedFolderId) setUnlockedFolderId(null)
     setSelectedFolderId(folderId)
     saveFolderPreference(userId, folderId)
+  }
+
+  /** 鍵がかかっていない、または今開いているフォルダか */
+  function isFolderOpen(folder) {
+    return !folder.lock_hash || folder.id === unlockedFolderId
+  }
+
+  // 鍵付きフォルダを開く（パスワードが正しければ true）
+  async function unlockCurrentFolder(password) {
+    const ok = await verifyFolderPassword(password, currentFolder.lock_hash)
+    if (ok) setUnlockedFolderId(currentFolder.id)
+    return ok
+  }
+
+  // パスワードを忘れたとき：管理者パスワードで鍵を外す
+  async function clearCurrentLockWithAdmin(adminPassword) {
+    const result = await clearLockWithAdmin(currentFolder.id, adminPassword)
+    if (result === 'ok') setUnlockedFolderId(currentFolder.id)
+    return result
+  }
+
+  // 鍵をかける（このあとも、切り替えるまでは開いたまま使える）
+  async function lockFolder(folderId, password) {
+    await setLock(folderId, await hashFolderPassword(password))
+    // 表示中のフォルダに鍵をかけた場合は、その場で締め出さない
+    if (folderId === currentFolder?.id) setUnlockedFolderId(folderId)
+  }
+
+  // 鍵を外す（今のパスワードが正しいときだけ。正しければ true）
+  async function unlockFolderPermanently(folderId, password) {
+    const folder = folders.find((item) => item.id === folderId)
+    if (!folder?.lock_hash || !(await verifyFolderPassword(password, folder.lock_hash))) return false
+    await setLock(folderId, null)
+    return true
   }
 
   // 新しいフォルダを作って、そのフォルダに切り替える（最初のフォルダ作成画面用）
@@ -195,6 +235,17 @@ function MainApp({ userId, email, onSignOut }) {
     if (!currentFolder) {
       return <FolderSetup onCreate={createFirstFolder} />
     }
+    // 鍵がかかっていて、まだ開いていないフォルダ → パスワード入力の画面
+    if (!isFolderOpen(currentFolder)) {
+      return (
+        <LockedFolder
+          key={currentFolder.id}
+          folderName={currentFolder.name}
+          onUnlock={unlockCurrentFolder}
+          onClearWithAdmin={clearCurrentLockWithAdmin}
+        />
+      )
+    }
 
     const stockProps = {
       stocks: folderStocks,
@@ -240,6 +291,9 @@ function MainApp({ userId, email, onSignOut }) {
           onAdd={addFolder}
           onRename={editFolder}
           onDelete={deleteFolder}
+          isFolderOpen={isFolderOpen}
+          onLock={lockFolder}
+          onRemoveLock={unlockFolderPermanently}
           onClose={() => setFolderDialogOpen(false)}
         />
       )}

@@ -1,7 +1,8 @@
 import { useId, useRef, useState } from 'react'
 import Modal from './Modal'
-import { CheckIcon, CloseIcon, FolderIcon, PencilIcon, PlusIcon, TrashIcon } from './Icons'
+import { CheckIcon, CloseIcon, FolderIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
 import { cleanFolderName } from '../utils/folders'
+import { FOLDER_LOCK_MIN_LENGTH, validateFolderLock } from '../utils/folderLock'
 import { toErrorMessage } from '../utils/errors'
 
 /**
@@ -16,12 +17,27 @@ import { toErrorMessage } from '../utils/errors'
  *   onAdd: (name: string) => Promise<{ id: string }>,
  *   onRename: (id: string, name: string) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
+ *   isFolderOpen: (folder: object) => boolean,                 // 鍵がない、または開いているフォルダか
+ *   onLock: (id: string, password: string) => Promise<void>,   // 鍵をかける
+ *   onRemoveLock: (id: string, password: string) => Promise<boolean>, // 鍵を外す（パスワードが違えば false）
  *   onClose: () => void,
  * }} props
  */
-export default function FolderDialog({ folders, currentId, counts, onSelect, onAdd, onRename, onDelete, onClose }) {
+export default function FolderDialog({
+  folders,
+  currentId,
+  counts,
+  onSelect,
+  onAdd,
+  onRename,
+  onDelete,
+  isFolderOpen,
+  onLock,
+  onRemoveLock,
+  onClose,
+}) {
   const id = useId()
-  // 行ごとの操作モード（null: 通常 / { type: 'rename', id } / { type: 'delete', id }）
+  // 行ごとの操作モード（null: 通常 / { type: 'rename' | 'delete' | 'lock', id }）
   const [rowMode, setRowMode] = useState(null)
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
@@ -96,6 +112,31 @@ export default function FolderDialog({ folders, currentId, counts, onSelect, onA
         {folders.map((folder) => {
           const isCurrent = folder.id === currentId
           const count = counts[folder.id] ?? 0
+          const isLocked = Boolean(folder.lock_hash)
+          // 鍵がかかって閉じているフォルダは、件数・名前変更・削除を出さない
+          const isOpen = isFolderOpen(folder)
+
+          if (rowMode?.id === folder.id && rowMode.type === 'lock') {
+            return (
+              <li key={folder.id} className="folder-row">
+                <LockForm
+                  folder={folder}
+                  busy={busy}
+                  onSetLock={(password) => run(() => onLock(folder.id, password)).then((ok) => ok && setRowMode(null))}
+                  onRemoveLock={async (password) => {
+                    let removed = false
+                    const ok = await run(async () => {
+                      removed = await onRemoveLock(folder.id, password)
+                    })
+                    if (ok && removed) setRowMode(null)
+                    // 通信エラーのときは上にエラーを出すので、ここでは「違う」とは言わない
+                    return ok ? removed : true
+                  }}
+                  onCancel={() => setRowMode(null)}
+                />
+              </li>
+            )
+          }
 
           if (rowMode?.id === folder.id && rowMode.type === 'rename') {
             return (
@@ -150,16 +191,32 @@ export default function FolderDialog({ folders, currentId, counts, onSelect, onA
               >
                 <FolderIcon size={20} />
                 <span className="folder-select-name">{folder.name}</span>
-                <span className="folder-select-count">{count}件</span>
+                {isOpen ? (
+                  <span className="folder-select-count">{count}件</span>
+                ) : (
+                  <span className="folder-select-count" aria-label="鍵がかかっています">
+                    <LockIcon size={15} />
+                  </span>
+                )}
                 {isCurrent && <CheckIcon size={18} />}
+              </button>
+              <button
+                type="button"
+                className={`icon-btn${isLocked ? ' is-locked' : ''}`}
+                onClick={() => setRowMode({ type: 'lock', id: folder.id })}
+                aria-label={isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
+                title={isLocked ? '鍵を外す' : '鍵をかける'}
+                disabled={Boolean(rowMode) || busy}
+              >
+                {isLocked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
               </button>
               <button
                 type="button"
                 className="icon-btn"
                 onClick={() => setRowMode({ type: 'rename', id: folder.id })}
                 aria-label={`「${folder.name}」の名前を変更`}
-                title="名前を変更"
-                disabled={Boolean(rowMode) || busy}
+                title={isOpen ? '名前を変更' : '鍵を開けると変更できます'}
+                disabled={Boolean(rowMode) || busy || !isOpen}
               >
                 <PencilIcon size={18} />
               </button>
@@ -168,8 +225,10 @@ export default function FolderDialog({ folders, currentId, counts, onSelect, onA
                 className="icon-btn icon-btn-danger"
                 onClick={() => setRowMode({ type: 'delete', id: folder.id })}
                 aria-label={`「${folder.name}」を削除`}
-                title={folders.length <= 1 ? '最後のフォルダは削除できません' : '削除'}
-                disabled={Boolean(rowMode) || busy || folders.length <= 1}
+                title={
+                  folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'
+                }
+                disabled={Boolean(rowMode) || busy || folders.length <= 1 || !isOpen}
               >
                 <TrashIcon size={18} />
               </button>
@@ -263,6 +322,84 @@ function RenameForm({ folder, folders, busy, onSave, onCancel }) {
         </button>
       </div>
       {nameError && <p className="field-error">{nameError}</p>}
+    </form>
+  )
+}
+
+/**
+ * 鍵の設定・解除フォーム（一覧の行の中に表示する）。
+ * 鍵がないフォルダ：新しいパスワードを2回入れて鍵をかける。
+ * 鍵があるフォルダ：今のパスワードを入れて鍵を外す（忘れた場合は、フォルダを開く画面から管理者パスワードで外せる）。
+ */
+function LockForm({ folder, busy, onSetLock, onRemoveLock, onCancel }) {
+  const isLocked = Boolean(folder.lock_hash)
+  const [password, setPassword] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [error, setError] = useState('')
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (isLocked) {
+      if (!password) {
+        setError('今のパスワードを入力してください。')
+        return
+      }
+      const removed = await onRemoveLock(password)
+      if (!removed) {
+        setError('パスワードが違います。')
+        setPassword('')
+      }
+      return
+    }
+    const message = validateFolderLock(password, confirmation)
+    setError(message)
+    if (!message) onSetLock(password)
+  }
+
+  return (
+    <form className="folder-rename" onSubmit={handleSubmit} noValidate>
+      <p className="folder-lock-title">
+        {isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
+      </p>
+      <input
+        className="input"
+        type="password"
+        value={password}
+        onChange={(e) => {
+          setPassword(e.target.value)
+          if (error) setError('')
+        }}
+        placeholder={isLocked ? '今のパスワード' : `パスワード（${FOLDER_LOCK_MIN_LENGTH}文字以上）`}
+        aria-label={isLocked ? '今のパスワード' : '鍵のパスワード'}
+        autoComplete="off"
+        autoFocus
+        disabled={busy}
+      />
+      {!isLocked && (
+        <input
+          className="input"
+          type="password"
+          value={confirmation}
+          onChange={(e) => {
+            setConfirmation(e.target.value)
+            if (error) setError('')
+          }}
+          placeholder="確認のため、もう一度"
+          aria-label="確認用のパスワード"
+          autoComplete="off"
+          disabled={busy}
+        />
+      )}
+      {!isLocked && <p className="muted folder-lock-note">鍵付きのフォルダは、開くときにパスワードが必要になります。</p>}
+      <div className="folder-row-actions">
+        <button type="button" className="btn btn-secondary btn-small" onClick={onCancel} disabled={busy}>
+          キャンセル
+        </button>
+        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
+          {isLocked ? '鍵を外す' : '鍵をかける'}
+        </button>
+      </div>
+      {error && <p className="field-error">{error}</p>}
     </form>
   )
 }

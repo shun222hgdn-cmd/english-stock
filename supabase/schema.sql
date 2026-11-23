@@ -6,6 +6,7 @@
 --    すでに stocks テーブルがある場合は「already exists」エラーで止まり、
 --    既存のテーブル・データは削除も上書きもされません。
 --    以前の版で構築済みの場合は、migrations/ の SQL のうち未実行のものを番号順に実行してください。
+--    ※ 管理者パスワード（003）とフォルダの鍵の解除関数（005）は、このファイルの後に migrations/003・005 を実行して追加してください。
 -- =========================================================
 
 begin;
@@ -25,6 +26,10 @@ create table public.folders (
     -- フォルダ名（1〜20文字、空白だけは不可）
     name text not null
         check (char_length(btrim(name)) between 1 and 20),
+
+    -- フォルダの鍵（任意）。パスワードのハッシュ。未設定なら鍵なし（画面での鍵）
+    lock_hash text
+        check (lock_hash is null or char_length(lock_hash) <= 200),
 
     -- stocks から「フォルダID + 持ち主」の組で参照するための一意制約
     unique (id, user_id),

@@ -202,3 +202,21 @@ export function CardsIcon(props) {
     </Icon>
   )
 }
+
+export function LockIcon(props) {
+  return (
+    <Icon {...props}>
+      <rect x="5" y="11" width="14" height="10" rx="1.5" />
+      <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+    </Icon>
+  )
+}
+
+export function UnlockIcon(props) {
+  return (
+    <Icon {...props}>
+      <rect x="5" y="11" width="14" height="10" rx="1.5" />
+      <path d="M8 11V7.5a4 4 0 0 1 7.6-1.7" />
+    </Icon>
+  )
+}
