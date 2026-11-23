@@ -13,8 +13,8 @@ const FILTERS = [
 ]
 
 /**
- * ストック画面（単語とフレーズを1つの画面で管理する）。
- * 上部の切り替えで表示する種類を変え、「＋ 追加」でどちらも登録できる。
+ * 単語帳の画面（単語とフレーズを1つの画面で管理する）。
+ * 上部の切り替え（件数つき）で表示する種類を変え、「＋ 追加」でどちらも登録できる。
  * 一覧の行を押すと編集画面が開き、削除もそこから行う。
  *
  * @param {{
@@ -32,6 +32,13 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const [editingStock, setEditingStock] = useState(null)
 
   const { noun } = FILTERS.find((item) => item.value === filter) ?? FILTERS[0]
+
+  // 種類ごとの件数（切り替えのタブに表示する。固定値ではなく実データから計算）
+  const counts = useMemo(() => {
+    const result = { all: stocks.length, word: 0, phrase: 0 }
+    for (const stock of stocks) result[stock.category] += 1
+    return result
+  }, [stocks])
 
   // 切り替えで絞り込んだデータ
   const filteredStocks = useMemo(() => filterByCategory(stocks, filter), [stocks, filter])
@@ -57,10 +64,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   return (
     <section className="page">
       <div className="page-header">
-        <h1 className="page-title">
-          ストック
-          <span className="count-badge">{filteredStocks.length}件</span>
-        </h1>
+        <h1 className="page-title">単語帳</h1>
         <button
           type="button"
           className="btn btn-text"
@@ -80,8 +84,10 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
             className={`segmented-btn${filter === value ? ' is-active' : ''}`}
             aria-pressed={filter === value}
             onClick={() => onFilterChange(value)}
+            aria-label={`${label} ${counts[value]}件`}
           >
             {label}
+            <span className="segmented-count">{counts[value]}</span>
           </button>
         ))}
       </div>

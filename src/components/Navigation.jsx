@@ -1,10 +1,9 @@
-import { BookIcon, HomeIcon, ShuffleIcon } from './Icons'
+import { BookIcon, CardsIcon } from './Icons'
 
 // 画面下部の固定ナビゲーションに並べる項目
 const NAV_ITEMS = [
-  { page: 'home', label: 'ホーム', Icon: HomeIcon },
-  { page: 'stock', label: 'ストック', Icon: BookIcon },
-  { page: 'quiz', label: '復習', Icon: ShuffleIcon },
+  { page: 'stock', label: '単語帳', Icon: BookIcon },
+  { page: 'quiz', label: '暗記', Icon: CardsIcon },
 ]
 
 /**

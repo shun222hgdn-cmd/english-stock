@@ -76,8 +76,9 @@ english-stock/
 ├── public/favicon.svg             ファビコン
 ├── src/
 │   ├── components/                画面の部品
-│   │   ├── Header.jsx             ヘッダー（アプリ名・ログアウト）
-│   │   ├── Navigation.jsx         画面下部の固定ナビゲーション
+│   │   ├── Header.jsx             ヘッダー（アプリ名・フォルダ切り替え・設定）
+│   │   ├── SettingsDialog.jsx     設定（パスワード変更・ログアウト）
+│   │   ├── Navigation.jsx         画面下部のタブ（単語帳 / 暗記）
 │   │   ├── StockCard.jsx          一覧の1件分のカード
 │   │   ├── StockForm.jsx          登録・編集フォーム（モーダル）
 │   │   ├── ConfirmDialog.jsx（廃止：削除の確認は編集画面の中で行う）
@@ -88,7 +89,6 @@ english-stock/
 │   │   └── Icons.jsx              SVGアイコン
 │   ├── pages/                     画面
 │   │   ├── Login.jsx              ログイン画面
-│   │   ├── Home.jsx               ホーム画面
 │   │   ├── StockPage.jsx          Stock画面（英単語・フレーズの一覧・登録）
 │   │   ├── FolderSetup.jsx        最初のフォルダ作成画面
 │   │   └── Quiz.jsx               ランダム出題画面

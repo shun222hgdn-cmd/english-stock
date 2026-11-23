@@ -9,8 +9,8 @@ export const QUIZ_CATEGORIES = [
 
 /** 出題方向（ja-en: 日本語 → 英語 / en-ja: 英語 → 日本語） */
 export const QUIZ_DIRECTIONS = [
-  { value: 'ja-en', label: '日本語 → 英語' },
-  { value: 'en-ja', label: '英語 → 日本語' },
+  { value: 'ja-en', label: 'JP → EN', description: '日本語を見て英語を答える' },
+  { value: 'en-ja', label: 'EN → JP', description: '英語を見て日本語を答える' },
 ]
 
 /**

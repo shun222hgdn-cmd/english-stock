@@ -45,9 +45,7 @@ export default function QuizCard({
             </span>
             {note && <span className="quiz-note">{note}</span>}
           </>
-        ) : (
-          <span className="quiz-tap-hint">タップで答え</span>
-        )}
+        ) : null}
       </span>
     </button>
   )

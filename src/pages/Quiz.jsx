@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuizCard from '../components/QuizCard'
-import { SwapIcon } from '../components/Icons'
 import {
   QUIZ_CATEGORIES,
   QUIZ_DIRECTIONS,
@@ -69,40 +68,44 @@ export default function Quiz({ stocks }) {
   }
 
   const isJaToEn = quizDirection === 'ja-en'
-  const directionLabel = QUIZ_DIRECTIONS.find((item) => item.value === quizDirection)?.label ?? ''
   // 出題方向に応じた「問題」と「答え」
   const qa = currentQuestion ? getQuestionAndAnswer(currentQuestion, quizDirection) : null
 
   return (
     <section className="page">
-      <h1 className="page-title">復習</h1>
+      <div className="page-header">
+        <h1 className="page-title">暗記</h1>
 
-      <div className="quiz-controls">
-        {/* 出題範囲 */}
-        <div className="segmented" role="group" aria-label="出題範囲">
-          {QUIZ_CATEGORIES.map(({ value, label }) => (
+        {/* 出題方向：JP → EN（日本語を見て英語を答える）/ EN → JP。選んでいる方が濃く表示される */}
+        <div className="lang-switch" role="group" aria-label="出題方向">
+          {QUIZ_DIRECTIONS.map(({ value, label, description }) => (
             <button
               key={value}
               type="button"
-              className={`segmented-btn${quizCategory === value ? ' is-active' : ''}`}
-              aria-pressed={quizCategory === value}
-              onClick={() => handleCategoryChange(value)}
+              className={`lang-switch-btn${quizDirection === value ? ' is-active' : ''}`}
+              aria-pressed={quizDirection === value}
+              title={description}
+              onClick={() => handleDirectionChange(value)}
             >
               {label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* 出題方向：押すたびに 日→英 / 英→日 が入れ替わる */}
-        <button
-          type="button"
-          className="direction-btn"
-          onClick={() => handleDirectionChange(isJaToEn ? 'en-ja' : 'ja-en')}
-          aria-label={`出題方向：${directionLabel}（押すと入れ替え）`}
-        >
-          {directionLabel}
-          <SwapIcon size={16} />
-        </button>
+      {/* 出題範囲 */}
+      <div className="segmented" role="group" aria-label="出題範囲">
+        {QUIZ_CATEGORIES.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            className={`segmented-btn${quizCategory === value ? ' is-active' : ''}`}
+            aria-pressed={quizCategory === value}
+            onClick={() => handleCategoryChange(value)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* 出題範囲に登録が0件のときは、問題カードを表示しない */}

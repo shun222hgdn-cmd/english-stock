@@ -1,16 +1,15 @@
-import { ChevronDownIcon, KeyIcon, LogoIcon, LogoutIcon } from './Icons'
+import { ChevronDownIcon, GearIcon, LogoIcon } from './Icons'
 
 /**
- * 画面上部のヘッダー（アプリ名・フォルダ切り替え・パスワード変更・ログアウト）。
+ * 画面上部のヘッダー（アプリ名・フォルダ切り替え・設定）。
+ * パスワード変更とログアウトは、歯車の「設定」の中にまとめている。
  * @param {{
  *   folderName?: string,           // 表示中のフォルダ名（フォルダが無いときは省略）
  *   onOpenFolders?: () => void,    // フォルダ切り替えボタンを押したとき
- *   onOpenPassword: () => void,    // パスワード変更ボタンを押したとき
- *   onSignOut: () => void,
- *   signingOut: boolean,
+ *   onOpenSettings: () => void,    // 歯車（設定）を押したとき
  * }} props
  */
-export default function Header({ folderName, onOpenFolders, onOpenPassword, onSignOut, signingOut }) {
+export default function Header({ folderName, onOpenFolders, onOpenSettings }) {
   return (
     <header className="app-header">
       <div className="app-header-inner">
@@ -35,23 +34,12 @@ export default function Header({ folderName, onOpenFolders, onOpenPassword, onSi
         <button
           type="button"
           className="icon-btn header-icon-btn"
-          onClick={onOpenPassword}
-          aria-label="パスワード変更"
-          title="パスワード変更"
+          onClick={onOpenSettings}
+          aria-label="設定"
+          title="設定"
           aria-haspopup="dialog"
         >
-          <KeyIcon size={18} />
-        </button>
-
-        <button
-          type="button"
-          className="icon-btn header-icon-btn"
-          onClick={onSignOut}
-          disabled={signingOut}
-          aria-label="ログアウト"
-          title="ログアウト"
-        >
-          <LogoutIcon size={18} />
+          <GearIcon size={20} />
         </button>
       </div>
     </header>

@@ -3,9 +3,9 @@ import Header from './components/Header'
 import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
 import PasswordDialog from './components/PasswordDialog'
+import SettingsDialog from './components/SettingsDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
-import Home from './pages/Home'
 import StockPage from './pages/StockPage'
 import Quiz from './pages/Quiz'
 import FolderSetup from './pages/FolderSetup'
@@ -14,6 +14,7 @@ import { useStocks } from './hooks/useStocks'
 import { useFolders } from './hooks/useFolders'
 import { isSupabaseConfigured } from './lib/supabase'
 import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
+import { toDisplayId } from './utils/loginId'
 import { loadChoice, saveChoice } from './lib/preferences'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
@@ -66,8 +67,9 @@ function AuthGate() {
  * どの画面も、選んでいるフォルダのデータだけを扱う。
  */
 function MainApp({ userId, email, onSignOut }) {
-  const [activePage, setActivePage] = useState('home')
-  // ストック画面の表示切り替え（All / Words / Phrases）。端末に保存し、開き直しても前回の表示で始める
+  // 表示中の画面（'stock'：単語帳 / 'quiz'：暗記）。最初は単語帳
+  const [activePage, setActivePage] = useState('stock')
+  // 単語帳の表示切り替え（すべて / 単語 / フレーズ）。端末に保存し、開き直しても前回の表示で始める
   const [stockFilter, setStockFilterState] = useState(() =>
     loadChoice('stockFilter', ['all', 'word', 'phrase'], 'all'),
   )
@@ -79,6 +81,7 @@ function MainApp({ userId, email, onSignOut }) {
   const [signOutError, setSignOutError] = useState('')
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
 
@@ -119,17 +122,6 @@ function MainApp({ userId, email, onSignOut }) {
     [stocks, currentFolder],
   )
 
-  // 登録件数は stocks から計算する（固定値や別の状態は使わない）
-  const counts = useMemo(() => {
-    let word = 0
-    let phrase = 0
-    for (const stock of folderStocks) {
-      if (stock.category === 'word') word += 1
-      else if (stock.category === 'phrase') phrase += 1
-    }
-    return { word, phrase }
-  }, [folderStocks])
-
   // フォルダごとの件数（フォルダ切り替え画面に表示）
   const folderCounts = useMemo(() => {
     const result = {}
@@ -137,17 +129,9 @@ function MainApp({ userId, email, onSignOut }) {
     return result
   }, [stocks])
 
-  /**
-   * 画面の移動。'words' / 'phrases' を指定すると、ストック画面をその種類で開く
-   * （ホームの件数カードや、復習画面の「登録する」ボタンから使う）。
-   */
+  /** 画面の移動（'stock'：単語帳 / 'quiz'：暗記） */
   function navigate(page) {
-    if (page === 'words' || page === 'phrases') {
-      setStockFilter(page === 'words' ? 'word' : 'phrase')
-      setActivePage('stock')
-    } else {
-      setActivePage(page)
-    }
+    setActivePage(page)
     window.scrollTo(0, 0)
   }
 
@@ -160,7 +144,7 @@ function MainApp({ userId, email, onSignOut }) {
   async function createFirstFolder(name) {
     const created = await addFolder(name)
     selectFolder(created.id)
-    navigate('home')
+    navigate('stock')
   }
 
   // フォルダを削除したら、中のデータも手元から消す（データベース側は自動で削除される）
@@ -220,21 +204,12 @@ function MainApp({ userId, email, onSignOut }) {
       onDelete: removeStock,
     }
     // key にフォルダIDを指定：フォルダを切り替えると検索や出題の状態がリセットされる
-    switch (activePage) {
-      case 'stock':
-        return (
-          <StockPage
-            key={currentFolder.id}
-            {...stockProps}
-            filter={stockFilter}
-            onFilterChange={setStockFilter}
-          />
-        )
-      case 'quiz':
-        return <Quiz key={currentFolder.id} stocks={folderStocks} />
-      default:
-        return <Home wordCount={counts.word} phraseCount={counts.phrase} onNavigate={navigate} />
+    if (activePage === 'quiz') {
+      return <Quiz key={currentFolder.id} stocks={folderStocks} />
     }
+    return (
+      <StockPage key={currentFolder.id} {...stockProps} filter={stockFilter} onFilterChange={setStockFilter} />
+    )
   }
 
   const showMenu = !loading && !error && Boolean(currentFolder)
@@ -244,9 +219,7 @@ function MainApp({ userId, email, onSignOut }) {
       <Header
         folderName={showMenu ? currentFolder.name : undefined}
         onOpenFolders={() => setFolderDialogOpen(true)}
-        onOpenPassword={() => setPasswordDialogOpen(true)}
-        onSignOut={handleSignOut}
-        signingOut={signingOut}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
       <main className="app-main">
         {signOutError && (
@@ -268,6 +241,20 @@ function MainApp({ userId, email, onSignOut }) {
           onRename={editFolder}
           onDelete={deleteFolder}
           onClose={() => setFolderDialogOpen(false)}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsDialog
+          loginId={toDisplayId(email)}
+          signingOut={signingOut}
+          onOpenPassword={() => {
+            // 設定を閉じてから、パスワード変更を開く
+            setSettingsOpen(false)
+            setPasswordDialogOpen(true)
+          }}
+          onSignOut={handleSignOut}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
 

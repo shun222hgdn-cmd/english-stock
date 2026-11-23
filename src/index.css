@@ -604,6 +604,19 @@ button:disabled {
   font-weight: 400;
 }
 
+/* 単語帳のタブに付ける件数 */
+.segmented-count {
+  margin-left: 5px;
+  color: var(--ink-faint);
+  font-family: var(--font-en);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.segmented-btn.is-active .segmented-count {
+  color: var(--pen);
+}
+
 /* 登録フォームの 単語 / フレーズ 切り替え */
 .form-category {
   margin-bottom: 14px;
@@ -654,39 +667,6 @@ code {
 
 .ruled-list > li {
   border-bottom: 1px solid var(--rule);
-}
-
-/* ホーム：件数の行（押すとストック画面へ） */
-.count-row {
-  width: 100%;
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  min-height: 56px;
-  padding: 12px 4px;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  text-align: left;
-}
-
-.count-row:hover {
-  background-color: var(--pen-soft);
-}
-
-.count-row-label {
-  flex: 1;
-}
-
-.count-row-value {
-  font-family: var(--font-en);
-  font-size: 1.35rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.count-row-arrow {
-  align-self: center;
-  color: var(--ink-faint);
 }
 
 /* ---------- 検索 ---------- */
@@ -806,34 +786,39 @@ code {
 }
 
 /* ---------- 復習（単語カード） ---------- */
-.quiz-controls {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.quiz-controls .segmented {
-  flex: 1;
-}
-
-/* 出題方向の切り替え（押すたびに 日→英 / 英→日 が入れ替わる） */
-.direction-btn {
+/* 出題方向の切り替え：JP → EN / EN → JP の2つの札。選んでいる方を墨色で塗る */
+.lang-switch {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 40px;
-  padding: 6px 2px;
+  flex-shrink: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.lang-switch-btn {
+  min-height: 36px;
+  padding: 4px 12px;
   border: none;
-  border-bottom: 1px solid var(--rule);
   background: transparent;
   color: var(--ink-soft);
-  font-size: 0.88rem;
+  font-family: var(--font-en);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
-.direction-btn:hover {
+.lang-switch-btn + .lang-switch-btn {
+  border-left: 1px solid var(--rule-strong);
+}
+
+.lang-switch-btn:hover:not(.is-active) {
   color: var(--ink);
+}
+
+.lang-switch-btn.is-active {
+  background-color: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
 }
 
 /* 単語カード：紙のカードを1枚置いたような見た目。押すと答えが出る */
@@ -873,17 +858,11 @@ code {
   font-weight: 600;
 }
 
-.quiz-tap-hint {
-  color: var(--ink-faint);
-  font-size: 0.8rem;
-}
-
 .quiz-answer-area {
   width: 100%;
 }
 
 .quiz-answer,
-.quiz-tap-hint,
 .quiz-note {
   display: block;
 }
@@ -1086,6 +1065,38 @@ code {
   color: var(--pen);
 }
 
+/* ---------- 設定 ---------- */
+.settings-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 4px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.settings-row:hover:not(:disabled) {
+  background-color: var(--pen-soft);
+}
+
+.settings-row svg {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+}
+
+.settings-row-label {
+  flex: 1;
+}
+
+.settings-row-danger,
+.settings-row-danger svg {
+  color: var(--red);
+}
+
 /* ---------- パスワード変更 ---------- */
 .password-done {
   display: flex;
@@ -1111,7 +1122,7 @@ code {
   margin: 0 auto;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .nav-btn {
