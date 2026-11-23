@@ -10,4 +10,9 @@ export default defineConfig(({ command }) => ({
   // 開発サーバー（npm run dev）は http://localhost:5173/ で開けるように '/' にし、
   // ビルド時（npm run build）だけ GitHub Pages 用のパスにする
   base: command === 'build' ? GITHUB_PAGES_BASE : '/',
+  build: {
+    // アプリ本体は約500KB（圧縮後 約145KB）で、その大半は Supabase のライブラリ。
+    // 個人用アプリとしては十分な速さなので、警告の目安を少し上げておく。
+    chunkSizeWarningLimit: 700,
+  },
 }))

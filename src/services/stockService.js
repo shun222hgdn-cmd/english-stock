@@ -51,6 +51,31 @@ export async function createStock({ folder_id, category, english, japanese, part
   return data
 }
 
+/**
+ * 複数の登録データを、指定したフォルダにまとめて追加する（「まとめて追加」用）。
+ * 一度に送りすぎないよう、100件ずつに分けて保存する。
+ * @param {string} folder_id
+ * @param {Array<{ category: string, english: string, japanese: string, part_of_speech?: string|null, note?: string|null }>} items
+ * @returns {Promise<Array<object>>} 保存したデータ
+ */
+export async function createStocks(folder_id, items) {
+  const created = []
+  for (let i = 0; i < items.length; i += 100) {
+    const rows = items.slice(i, i + 100).map(({ category, english, japanese, part_of_speech = null, note = null }) => ({
+      folder_id,
+      category,
+      english,
+      japanese,
+      part_of_speech,
+      note,
+    }))
+    const { data, error } = await supabase.from(TABLE).insert(rows).select(COLUMNS)
+    if (error) throw error
+    created.push(...data)
+  }
+  return created
+}
+
 /** 指定したIDの種類・英語・日本語訳・品詞・コメントを更新する */
 export async function updateStock(id, { category, english, japanese, part_of_speech = null, note = null }) {
   const { data, error } = await supabase

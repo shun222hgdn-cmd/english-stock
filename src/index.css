@@ -1232,6 +1232,89 @@ code {
   color: var(--red);
 }
 
+/* ---------- まとめて追加 ---------- */
+.bulk-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-left: 1.3em;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.bulk-steps li {
+  padding-left: 2px;
+}
+
+.bulk-steps .btn {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.bulk-step-text {
+  vertical-align: middle;
+}
+
+/* 貼り付け欄：英語が読みやすいよう等幅に近い書体で、改行はそのまま */
+.bulk-input {
+  min-height: 180px;
+  resize: vertical;
+  font-family: ui-monospace, Consolas, 'Hiragino Sans', monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.bulk-format {
+  margin: 6px 0 12px;
+  font-size: 0.8rem;
+}
+
+.bulk-summary {
+  margin-bottom: 8px;
+}
+
+.bulk-preview {
+  max-height: 46vh;
+  margin-bottom: 14px;
+  overflow-y: auto;
+}
+
+.bulk-preview li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 2px;
+}
+
+.bulk-preview li.is-skipped {
+  opacity: 0.55;
+}
+
+.bulk-preview-en {
+  font-size: 1.02rem;
+  overflow-wrap: anywhere;
+}
+
+.bulk-preview-ja {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.bulk-preview-note {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.bulk-skip-tag {
+  margin-left: 8px;
+  color: var(--red);
+  font-size: 0.75rem;
+}
+
 /* ---------- ChatGPT連携 ---------- */
 /* 発行したキー（この時だけ表示） */
 .token-box {

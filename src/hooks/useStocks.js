@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createStock, deleteStock, fetchAllStocks, updateStock } from '../services/stockService'
+import { createStock, createStocks, deleteStock, fetchAllStocks, updateStock } from '../services/stockService'
 import { toErrorMessage } from '../utils/errors'
 
 /**
@@ -71,6 +71,15 @@ export function useStocks(userId) {
     setStocks((prev) => [...prev, created])
   }, [])
 
+  /** まとめて追加：保存に成功したら一覧に加え、追加した件数を返す */
+  const addStocks = useCallback(async (folderId, items) => {
+    changeVersionRef.current += 1
+    const created = await createStocks(folderId, items)
+    changeVersionRef.current += 1
+    setStocks((prev) => [...prev, ...created])
+    return created.length
+  }, [])
+
   /** 更新：保存に成功したら一覧の該当データを置き換える */
   const editStock = useCallback(async (id, input) => {
     changeVersionRef.current += 1
@@ -93,5 +102,5 @@ export function useStocks(userId) {
     setStocks((prev) => prev.filter((stock) => stock.folder_id !== folderId))
   }, [])
 
-  return { stocks, loading, error, reload, refresh, addStock, editStock, removeStock, forgetFolderStocks }
+  return { stocks, loading, error, reload, refresh, addStock, addStocks, editStock, removeStock, forgetFolderStocks }
 }

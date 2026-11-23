@@ -94,7 +94,7 @@ function MainApp({ userId, email, onSignOut }) {
 
   const stocksState = useStocks(userId)
   const foldersState = useFolders(userId)
-  const { stocks, addStock, editStock, removeStock, forgetFolderStocks } = stocksState
+  const { stocks, addStock, addStocks, editStock, removeStock, forgetFolderStocks } = stocksState
   const { folders, addFolder, editFolder, removeFolder, setLock, clearLockWithAdmin } = foldersState
 
   // アプリに戻ってきたとき（タブの切り替え・スマホでアプリを開き直したとき）に、
@@ -274,6 +274,9 @@ function MainApp({ userId, email, onSignOut }) {
       onAdd: (input) => addStock({ ...input, folder_id: currentFolder.id }),
       onEdit: editStock,
       onDelete: removeStock,
+      // まとめて追加も、表示中のフォルダに入れる
+      onAddMany: (items) => addStocks(currentFolder.id, items),
+      folderName: currentFolder.name,
     }
     // key にフォルダIDを指定：フォルダを切り替えると検索や出題の状態がリセットされる
     if (activePage === 'quiz') {

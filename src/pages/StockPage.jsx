@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
+import BulkImportDialog from '../components/BulkImportDialog'
 import { filterStocks, groupByInitial, sortByEnglish } from '../utils/search'
 import { filterByCategory } from '../utils/quiz'
 import { PlusIcon } from '../components/Icons'
@@ -25,12 +26,16 @@ const FILTERS = [
  *   onAdd: (input: object) => Promise<void>,
  *   onEdit: (id: string, input: object) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
+ *   onAddMany: (items: Array<object>) => Promise<number>, // まとめて追加（追加した件数を返す）
+ *   folderName: string,
  * }} props
  */
-export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete }) {
+export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onAddMany, folderName }) {
   const [searchQuery, setSearchQuery] = useState('')
   // 登録・編集フォームの状態（null: 閉じている / { mode: 'add' } / { mode: 'edit', stock }）
   const [editingStock, setEditingStock] = useState(null)
+  // 「まとめて追加」の画面を開いているか
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const { noun } = FILTERS.find((item) => item.value === filter) ?? FILTERS[0]
 
@@ -64,7 +69,13 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
 
   return (
     <section className="page">
-      <h1 className="page-title">単語帳</h1>
+      <div className="page-header">
+        <h1 className="page-title">単語帳</h1>
+        {/* ChatGPT などで作ったリストを貼り付けて、まとめて追加 */}
+        <button type="button" className="btn btn-text" onClick={() => setBulkOpen(true)}>
+          まとめて追加
+        </button>
+      </div>
 
       {/* 追加ボタン：右下に大きく（親指で押しやすい位置） */}
       <button
@@ -126,6 +137,15 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
             </section>
           ))}
         </div>
+      )}
+
+      {bulkOpen && (
+        <BulkImportDialog
+          folderName={folderName}
+          existingStocks={stocks}
+          onImport={onAddMany}
+          onClose={() => setBulkOpen(false)}
+        />
       )}
 
       {editingStock && (
