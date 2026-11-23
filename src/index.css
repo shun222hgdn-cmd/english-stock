@@ -28,6 +28,7 @@
   --radius: 6px;
   --content-width: 560px; /* PCでもスマホのような操作感にするための最大幅 */
   --nav-height: 58px;
+  --nav-lift: 12px; /* 下のタブを画面の下端から少し持ち上げる */
 
   color-scheme: light;
   font-family: var(--font-ja);
@@ -165,7 +166,7 @@ button:disabled {
   margin: 0 auto;
   padding: 20px 16px;
   /* 下部の固定ナビゲーションにコンテンツが隠れないよう余白を確保 */
-  padding-bottom: calc(var(--nav-height) + 96px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-height) + var(--nav-lift) + 96px + env(safe-area-inset-bottom));
 }
 
 .page {
@@ -478,6 +479,11 @@ button:disabled {
   color: var(--ink-faint);
 }
 
+/* 品詞のプルダウンがある欄は、× ボタンを入力欄の1行目まで下げてプルダウンと重ねない */
+.group-field:has(.pos-select) .clear-btn {
+  top: 44px;
+}
+
 .clear-btn:hover {
   color: var(--ink);
 }
@@ -495,18 +501,20 @@ button:disabled {
 .pos-select {
   appearance: none;
   -webkit-appearance: none;
-  min-height: 26px;
-  padding: 1px 22px 1px 8px;
+  min-width: 116px;
+  min-height: 36px;
+  margin-right: -36px; /* 欄の右端まで寄せる（× ボタン用の余白の上に出す） */
+  padding: 4px 30px 4px 12px;
   border: 1px solid var(--rule);
   border-radius: 4px;
   background-color: transparent;
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: right 10px center, right 6px center;
-  background-size: 4px 4px, 4px 4px;
+  background-position: right 15px center, right 10px center;
+  background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
-  color: var(--ink-faint);
-  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-size: 1rem; /* 16px以上：見やすく、iPhoneで拡大されない */
   cursor: pointer;
 }
 
@@ -522,7 +530,7 @@ button:disabled {
 
 /* コメント欄は少し小さめの文字 */
 .group-input-note {
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px未満だとiPhoneで入力時に画面が拡大されるため */
 }
 
 /* キーボード操作のヒント（タッチ操作の端末では表示しない） */
@@ -668,7 +676,7 @@ code {
   position: fixed;
   z-index: 11;
   right: max(18px, calc((100vw - var(--content-width)) / 2 + 18px));
-  bottom: calc(var(--nav-height) + 18px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-height) + var(--nav-lift) + 18px + env(safe-area-inset-bottom));
   display: grid;
   place-items: center;
   width: 60px;
@@ -1243,6 +1251,84 @@ code {
   font-size: 0.82rem;
 }
 
+/* ---------- 詳細 ---------- */
+.detail-kind {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+.detail-pos {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--rule);
+}
+
+.detail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 編集ボタン：青ペンの枠で目立たせる */
+.detail-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 16px;
+  border-color: var(--pen);
+  color: var(--pen);
+  font-weight: 700;
+}
+
+.detail-english-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.detail-english {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-en);
+  font-size: 1.7rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.detail-english-row .speak-btn {
+  margin-top: 2px;
+  color: var(--pen);
+}
+
+.detail-japanese {
+  margin-top: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.detail-note {
+  margin-top: 14px;
+}
+
+.detail-note-label {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+}
+
+.detail-note-text {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- 設定 ---------- */
 .settings-row {
   width: 100%;
@@ -1317,7 +1403,7 @@ code {
   min-height: 180px;
   resize: vertical;
   font-family: ui-monospace, Consolas, 'Hiragino Sans', monospace;
-  font-size: 0.92rem;
+  font-size: 1rem; /* 16px未満だとiPhoneで入力時に画面が拡大されるため */
   line-height: 1.55;
   white-space: pre;
   overflow-x: auto;
@@ -1466,7 +1552,7 @@ code {
   z-index: 10;
   background-color: var(--paper);
   border-top: 1px solid var(--rule);
-  padding-bottom: env(safe-area-inset-bottom); /* iPhoneのホームバー対策 */
+  padding-bottom: calc(var(--nav-lift) + env(safe-area-inset-bottom)); /* iPhoneのホームバー対策＋少し上に */
 }
 
 .bottom-nav-list {

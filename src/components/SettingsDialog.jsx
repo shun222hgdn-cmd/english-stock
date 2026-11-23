@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { SPEECH_ACCENTS, SPEECH_RATES, isSpeechSupported, speakEnglish } from '../utils/speech'
 import { loadChoice, saveChoice } from '../lib/preferences'
 import Modal from './Modal'
-import { ChatIcon, CheckIcon, ChevronRightIcon, CloseIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
+import { CheckIcon, ChevronRightIcon, CloseIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
 
 /**
  * 設定（ヘッダーの歯車から開く）。
@@ -16,7 +16,6 @@ import { ChatIcon, CheckIcon, ChevronRightIcon, CloseIcon, DownloadIcon, KeyIcon
  *   onExportCsv: () => void,
  *   signingOut: boolean,
  *   onOpenPassword: () => void,
- *   onOpenChatgpt: () => void,     // ChatGPT連携の画面を開く
  *   onSignOut: () => void,
  *   onClose: () => void,
  * }} props
@@ -29,7 +28,6 @@ export default function SettingsDialog({
   onExportCsv,
   signingOut,
   onOpenPassword,
-  onOpenChatgpt,
   onSignOut,
   onClose,
 }) {
@@ -124,16 +122,6 @@ export default function SettingsDialog({
           ) : (
             <p className="settings-row-sub">この端末・ブラウザでは発音を使えません</p>
           )}
-        </li>
-        <li>
-          <button type="button" className="settings-row" onClick={onOpenChatgpt}>
-            <ChatIcon size={18} />
-            <span className="settings-row-label">
-              ChatGPT連携
-              <span className="settings-row-sub">ChatGPT から単語・フレーズを追加できるようにする</span>
-            </span>
-            <ChevronRightIcon size={18} className="settings-row-arrow" />
-          </button>
         </li>
         <li>
           <button type="button" className="settings-row" onClick={onOpenPassword}>

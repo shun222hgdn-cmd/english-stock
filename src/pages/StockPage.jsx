@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
+import StockDetail from '../components/StockDetail'
 import BulkImportDialog from '../components/BulkImportDialog'
 import { filterStocks, groupByInitial, sortByEnglish } from '../utils/search'
 import { filterByCategory } from '../utils/quiz'
@@ -17,7 +18,7 @@ const FILTERS = [
 /**
  * 単語帳の画面（単語とフレーズを1つの画面で管理する）。
  * 上部の切り替え（件数つき）で表示する種類を変え、「＋ 追加」でどちらも登録できる。
- * 一覧の行を押すと編集画面が開き、削除もそこから行う。
+ * 一覧の行を押すと詳細が開き、詳細の「編集」から編集画面へ進む（削除も編集画面から行う）。
  *
  * @param {{
  *   stocks: Array<object>,                    // 表示中のフォルダの登録データ
@@ -34,6 +35,9 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const [searchQuery, setSearchQuery] = useState('')
   // 登録・編集フォームの状態（null: 閉じている / { mode: 'add' } / { mode: 'edit', stock }）
   const [editingStock, setEditingStock] = useState(null)
+  // 詳細を表示中のデータの id（編集で内容が変わっても最新を表示するため id で持つ）
+  const [detailId, setDetailId] = useState(null)
+  const detailStock = detailId ? stocks.find((stock) => stock.id === detailId) : null
   // 「まとめて追加」の画面を開いているか
   const [bulkOpen, setBulkOpen] = useState(false)
 
@@ -130,7 +134,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
                     stock={stock}
                     // 「すべて」表示のときだけ、単語 / フレーズ の印を付ける
                     showCategory={filter === 'all'}
-                    onEdit={() => setEditingStock({ mode: 'edit', stock })}
+                    onOpen={() => setDetailId(stock.id)}
                   />
                 ))}
               </ul>
@@ -145,6 +149,15 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
           existingStocks={stocks}
           onImport={onAddMany}
           onClose={() => setBulkOpen(false)}
+        />
+      )}
+
+      {/* 詳細（編集画面を開いている間は隠し、閉じたら詳細に戻る。削除したときは消える） */}
+      {detailStock && !editingStock && (
+        <StockDetail
+          stock={detailStock}
+          onEdit={() => setEditingStock({ mode: 'edit', stock: detailStock })}
+          onClose={() => setDetailId(null)}
         />
       )}
 
