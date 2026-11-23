@@ -2,9 +2,9 @@
 
 /** 出題範囲 */
 export const QUIZ_CATEGORIES = [
-  { value: 'all', label: 'All' },
-  { value: 'word', label: 'Words' },
-  { value: 'phrase', label: 'Phrases' },
+  { value: 'all', label: 'すべて' },
+  { value: 'word', label: '単語' },
+  { value: 'phrase', label: 'フレーズ' },
 ]
 
 /** 出題方向（ja-en: 日本語 → 英語 / en-ja: 英語 → 日本語） */

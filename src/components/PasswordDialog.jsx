@@ -110,7 +110,7 @@ export default function PasswordDialog({ email, onClose }) {
     <Modal titleId={`${id}-title`} onRequestClose={requestClose} closeOnBackdrop={!formDirty} className="modal-form">
       <div className="modal-header">
         <h2 id={`${id}-title`} className="modal-title">
-          Password
+          パスワード変更
         </h2>
         <button type="button" className="icon-btn" onClick={requestClose} aria-label="閉じる">
           <CloseIcon size={20} />

@@ -2,21 +2,20 @@ import { useMemo, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
-import ConfirmDialog from '../components/ConfirmDialog'
-import { PlusIcon } from '../components/Icons'
 import { filterStocks, sortByEnglish } from '../utils/search'
 import { filterByCategory } from '../utils/quiz'
 
-// 表示の切り替え（All / Words / Phrases）
+// 表示の切り替え（すべて / 単語 / フレーズ）
 const FILTERS = [
-  { value: 'all', label: 'All', noun: '英単語・フレーズ' },
-  { value: 'word', label: 'Words', noun: '英単語' },
-  { value: 'phrase', label: 'Phrases', noun: 'フレーズ' },
+  { value: 'all', label: 'すべて', noun: '単語・フレーズ' },
+  { value: 'word', label: '単語', noun: '単語' },
+  { value: 'phrase', label: 'フレーズ', noun: 'フレーズ' },
 ]
 
 /**
- * ストック画面（英単語とフレーズを1つの画面で管理する）。
- * 上部の切り替えで All / Words / Phrases の表示を変え、＋ボタンでどちらも登録できる。
+ * ストック画面（単語とフレーズを1つの画面で管理する）。
+ * 上部の切り替えで表示する種類を変え、「＋ 追加」でどちらも登録できる。
+ * 一覧の行を押すと編集画面が開き、削除もそこから行う。
  *
  * @param {{
  *   stocks: Array<object>,                    // 表示中のフォルダの登録データ
@@ -31,8 +30,6 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const [searchQuery, setSearchQuery] = useState('')
   // 登録・編集フォームの状態（null: 閉じている / { mode: 'add' } / { mode: 'edit', stock }）
   const [editingStock, setEditingStock] = useState(null)
-  // 削除確認ダイアログの対象（null: 閉じている）
-  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const { noun } = FILTERS.find((item) => item.value === filter) ?? FILTERS[0]
 
@@ -45,7 +42,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   )
 
   const isSearching = searchQuery.trim() !== ''
-  // 追加フォームの種類：Words / Phrases 表示中はその種類、All なら英語の内容から自動判定
+  // 追加フォームの種類：単語 / フレーズ 表示中はその種類、すべてなら英語の内容から自動判定
   const defaultCategory = filter === 'all' ? null : filter
 
   // フォームの保存処理（種類はフォームで選んだもの）
@@ -61,19 +58,16 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
     <section className="page">
       <div className="page-header">
         <h1 className="page-title">
-          Stock
-          <span className="count-badge" aria-label={`${filteredStocks.length}件`}>
-            {filteredStocks.length}
-          </span>
+          ストック
+          <span className="count-badge">{filteredStocks.length}件</span>
         </h1>
         <button
           type="button"
-          className="btn btn-primary btn-icon"
+          className="btn btn-text"
           onClick={() => setEditingStock({ mode: 'add' })}
           aria-label={`${noun}を追加`}
-          title={`${noun}を追加`}
         >
-          <PlusIcon size={22} />
+          ＋ 追加
         </button>
       </div>
 
@@ -99,21 +93,18 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
         {isSearching ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
       </p>
 
-      {/* 登録が0件のときは何も表示しない（右上の＋から登録する） */}
+      {/* 登録が0件のときは何も表示しない（右上の「＋ 追加」から登録する） */}
       {filteredStocks.length === 0 ? null : visibleStocks.length === 0 ? (
-        <div className="card empty-state">
-          <p>「{searchQuery.trim()}」に一致する{noun}はありません。</p>
-        </div>
+        <p className="empty-state">「{searchQuery.trim()}」に一致する{noun}はありません。</p>
       ) : (
-        <ul className="stock-list">
+        <ul className="ruled-list">
           {visibleStocks.map((stock) => (
             <StockCard
               key={stock.id}
               stock={stock}
-              // All 表示のときだけ、Word / Phrase の印を付ける
+              // 「すべて」表示のときだけ、単語 / フレーズ の印を付ける
               showCategory={filter === 'all'}
               onEdit={() => setEditingStock({ mode: 'edit', stock })}
-              onDelete={() => setDeleteTarget(stock)}
             />
           ))}
         </ul>
@@ -126,16 +117,8 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
           defaultCategory={defaultCategory}
           existingStocks={stocks}
           onSubmit={handleSubmit}
+          onDelete={editingStock.mode === 'edit' ? () => onDelete(editingStock.stock.id) : undefined}
           onClose={() => setEditingStock(null)}
-        />
-      )}
-
-      {deleteTarget && (
-        <ConfirmDialog
-          message="このデータを削除しますか？"
-          detail={`${deleteTarget.english} / ${deleteTarget.japanese}`}
-          onConfirm={() => onDelete(deleteTarget.id)}
-          onClose={() => setDeleteTarget(null)}
         />
       )}
     </section>

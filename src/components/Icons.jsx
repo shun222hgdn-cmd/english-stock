@@ -1,15 +1,16 @@
 // アプリで使うシンプルなアイコン（外部ライブラリを使わず SVG で描画）
 // 色は文字色（currentColor）に合わせて変わる。装飾目的なので読み上げ対象外（aria-hidden）にしている。
 
-function Icon({ children, size = 22 }) {
+function Icon({ children, size = 22, className }) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -163,6 +164,22 @@ export function EyeOffIcon(props) {
       <path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6" />
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
       <path d="m3 3 18 18" />
+    </Icon>
+  )
+}
+
+export function ChevronRightIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="m9 6 6 6-6 6" />
+    </Icon>
+  )
+}
+
+export function SwapIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M7 7h12l-3-3M17 17H5l3 3" />
     </Icon>
   )
 }

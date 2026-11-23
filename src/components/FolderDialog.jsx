@@ -84,7 +84,7 @@ export default function FolderDialog({ folders, currentId, counts, onSelect, onA
     <Modal titleId={`${id}-title`} onRequestClose={requestClose} closeOnBackdrop={!rowMode && !newName.trim()}>
       <div className="modal-header">
         <h2 id={`${id}-title`} className="modal-title">
-          Folders
+          フォルダ
         </h2>
         <button type="button" className="icon-btn" onClick={requestClose} aria-label="閉じる" disabled={busy}>
           <CloseIcon size={20} />

@@ -1,38 +1,41 @@
 /**
- * ランダム出題の問題カード。問題を中央に大きく表示し、解答は showAnswer が true のときだけ表示する。
+ * ランダム出題の単語カード。問題を中央に大きく表示し、解答は showAnswer が true のときだけ表示する。
+ * カードそのものを押しても、答えの表示・非表示を切り替えられる（紙の単語カードをめくる感覚）。
  *
  * @param {{
  *   question: string,        // 問題文
  *   answer: string,          // 解答
- *   questionLang: string,    // 問題文の言語（読み上げ・フォント用）
+ *   questionLang: string,    // 問題文の言語（読み上げ・書体用）
  *   answerLang: string,
  *   showAnswer: boolean,
- *   categoryLabel: string,   // Word / Phrase
+ *   categoryLabel: string,   // 単語 / フレーズ
+ *   onToggle: () => void,    // カードを押したとき
  * }} props
  */
-export default function QuizCard({
-  question,
-  answer,
-  questionLang,
-  answerLang,
-  showAnswer,
-  categoryLabel,
-}) {
+export default function QuizCard({ question, answer, questionLang, answerLang, showAnswer, categoryLabel, onToggle }) {
   return (
-    <section className="card quiz-card" aria-label="問題">
+    <button
+      type="button"
+      className="quiz-card"
+      onClick={onToggle}
+      aria-expanded={showAnswer}
+      aria-label={showAnswer ? '問題（押すと答えを隠す）' : '問題（押すと答えを表示）'}
+    >
       <span className="quiz-badge">{categoryLabel}</span>
-      <p className="quiz-question" lang={questionLang}>
+      <span className="quiz-question" lang={questionLang}>
         {question}
-      </p>
+      </span>
 
       {/* aria-live で、解答が表示されたことをスクリーンリーダーにも伝える */}
-      <div className="quiz-answer-area" aria-live="polite">
-        {showAnswer && (
-          <p className="quiz-answer" lang={answerLang}>
+      <span className="quiz-answer-area" aria-live="polite">
+        {showAnswer ? (
+          <span className="quiz-answer" lang={answerLang}>
             {answer}
-          </p>
+          </span>
+        ) : (
+          <span className="quiz-tap-hint">タップで答え</span>
         )}
-      </div>
-    </section>
+      </span>
+    </button>
   )
 }

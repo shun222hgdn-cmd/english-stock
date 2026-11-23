@@ -2,9 +2,9 @@ import { BookIcon, HomeIcon, ShuffleIcon } from './Icons'
 
 // 画面下部の固定ナビゲーションに並べる項目
 const NAV_ITEMS = [
-  { page: 'home', label: 'Home', Icon: HomeIcon },
-  { page: 'stock', label: 'Stock', Icon: BookIcon },
-  { page: 'quiz', label: 'Review', Icon: ShuffleIcon },
+  { page: 'home', label: 'ホーム', Icon: HomeIcon },
+  { page: 'stock', label: 'ストック', Icon: BookIcon },
+  { page: 'quiz', label: '復習', Icon: ShuffleIcon },
 ]
 
 /**
@@ -25,7 +25,7 @@ export default function Navigation({ activePage, onNavigate }) {
                 onClick={() => onNavigate(page)}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon size={24} />
+                <Icon size={22} />
                 <span className="nav-label">{label}</span>
               </button>
             </li>

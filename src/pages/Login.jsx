@@ -44,11 +44,11 @@ export default function Login({ onSignIn }) {
   return (
     <main className="center-screen">
       <div className="login-box">
-        <p className="brand brand-large">
+        <p className="brand brand-large" lang="en">
           <LogoIcon size={26} />
           <span>English Stock</span>
         </p>
-        <h1 className="hero-title">Make English yours.</h1>
+        <h1 className="login-lead">英単語・フレーズのストック</h1>
 
         <form className="card login-card" onSubmit={handleSubmit} noValidate>
           <div className="field">

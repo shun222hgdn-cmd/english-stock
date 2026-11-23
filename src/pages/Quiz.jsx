@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuizCard from '../components/QuizCard'
+import { SwapIcon } from '../components/Icons'
 import {
   QUIZ_CATEGORIES,
   QUIZ_DIRECTIONS,
@@ -68,41 +69,40 @@ export default function Quiz({ stocks }) {
   }
 
   const isJaToEn = quizDirection === 'ja-en'
+  const directionLabel = QUIZ_DIRECTIONS.find((item) => item.value === quizDirection)?.label ?? ''
   // 出題方向に応じた「問題」と「答え」
   const qa = currentQuestion ? getQuestionAndAnswer(currentQuestion, quizDirection) : null
 
   return (
     <section className="page">
-      <h1 className="page-title">Review</h1>
+      <h1 className="page-title">復習</h1>
 
-      {/* 出題範囲 */}
-      <div className="segmented" role="group" aria-label="出題範囲">
-        {QUIZ_CATEGORIES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`segmented-btn${quizCategory === value ? ' is-active' : ''}`}
-            aria-pressed={quizCategory === value}
-            onClick={() => handleCategoryChange(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="quiz-controls">
+        {/* 出題範囲 */}
+        <div className="segmented" role="group" aria-label="出題範囲">
+          {QUIZ_CATEGORIES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={`segmented-btn${quizCategory === value ? ' is-active' : ''}`}
+              aria-pressed={quizCategory === value}
+              onClick={() => handleCategoryChange(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-      {/* 出題方向 */}
-      <div className="segmented segmented-sub" role="group" aria-label="出題方向">
-        {QUIZ_DIRECTIONS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`segmented-btn${quizDirection === value ? ' is-active' : ''}`}
-            aria-pressed={quizDirection === value}
-            onClick={() => handleDirectionChange(value)}
-          >
-            {label}
-          </button>
-        ))}
+        {/* 出題方向：押すたびに 日→英 / 英→日 が入れ替わる */}
+        <button
+          type="button"
+          className="direction-btn"
+          onClick={() => handleDirectionChange(isJaToEn ? 'en-ja' : 'ja-en')}
+          aria-label={`出題方向：${directionLabel}（押すと入れ替え）`}
+        >
+          {directionLabel}
+          <SwapIcon size={16} />
+        </button>
       </div>
 
       {/* 出題範囲に登録が0件のときは、問題カードを表示しない */}
@@ -114,7 +114,8 @@ export default function Quiz({ stocks }) {
             questionLang={isJaToEn ? 'ja' : 'en'}
             answerLang={isJaToEn ? 'en' : 'ja'}
             showAnswer={showAnswer}
-            categoryLabel={currentQuestion.category === 'word' ? 'Word' : 'Phrase'}
+            categoryLabel={currentQuestion.category === 'word' ? '単語' : 'フレーズ'}
+            onToggle={() => setShowAnswer((value) => !value)}
           />
           <div className="quiz-actions">
             <button
@@ -123,10 +124,10 @@ export default function Quiz({ stocks }) {
               onClick={() => setShowAnswer((value) => !value)}
               aria-expanded={showAnswer}
             >
-              {showAnswer ? 'Hide Answer' : 'Show Answer'}
+              {showAnswer ? '答えを隠す' : '答えを見る'}
             </button>
             <button type="button" className="btn btn-primary btn-block btn-large" onClick={handleNext}>
-              Next Question
+              次の問題
             </button>
           </div>
           {candidates.length === 1 && (

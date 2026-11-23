@@ -79,7 +79,7 @@ english-stock/
 │   │   ├── Navigation.jsx         画面下部の固定ナビゲーション
 │   │   ├── StockCard.jsx          一覧の1件分のカード
 │   │   ├── StockForm.jsx          登録・編集フォーム（モーダル）
-│   │   ├── ConfirmDialog.jsx      削除確認ダイアログ（モーダル）
+│   │   ├── ConfirmDialog.jsx（廃止：削除の確認は編集画面の中で行う）
 │   │   ├── Modal.jsx              モーダルの共通部品（<dialog> を使用）
 │   │   ├── SearchBar.jsx          検索欄
 │   │   ├── QuizCard.jsx           問題カード

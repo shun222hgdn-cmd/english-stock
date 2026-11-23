@@ -31,7 +31,7 @@ export default function FolderSetup({ onCreate }) {
 
   return (
     <section className="page">
-      <h1 className="hero-title">Create your folder.</h1>
+      <h1 className="page-title">フォルダを作成</h1>
       <form className="card folder-setup" onSubmit={handleSubmit} noValidate>
         <p className="folder-setup-icon" aria-hidden="true">
           <FolderIcon size={28} />

@@ -1,33 +1,62 @@
 /* =========================================================
    English Stock 共通スタイル
-   ダークテーマ + ライムグリーンのアクセント
+   「紙の単語帳」：生成りの紙・墨色の文字・青ペンの差し色。
+   カードで囲まず、罫線で区切る。英語は本のような書体で表示する。
+   端末がダークモードのときは、同じ考え方の「夜のノート」配色になる。
    ========================================================= */
 
-/* ---------- 色・サイズの定義（ここを変えると全体に反映される） ---------- */
+/* ---------- 色・書体・サイズの定義（ここを変えると全体に反映される） ---------- */
 :root {
-  --color-bg: #111827; /* 背景 */
-  --color-card: #1f2937; /* カード背景 */
-  --color-accent: #a3e635; /* アクセント */
-  --color-accent-text: #1a2e05; /* アクセント上の文字 */
-  --color-text: #f9fafb; /* メイン文字 */
-  --color-sub: #9ca3af; /* サブ文字 */
-  --color-border: #374151; /* ボーダー */
-  --color-danger: #f87171; /* エラー・削除 */
-  --color-secondary: #374151; /* 補助ボタン */
+  --paper: #f7f4ed; /* 背景（紙） */
+  --sheet: #fffdf8; /* 入力欄・カードなど一段明るい紙 */
+  --ink: #23211d; /* メイン文字（墨） */
+  --ink-soft: #6f6a60; /* サブ文字 */
+  --ink-faint: #a29c90; /* さらに薄い文字（補足・プレースホルダー） */
+  --rule: #e4ded1; /* 罫線 */
+  --rule-strong: #cfc7b6; /* 濃い罫線（入力欄の枠など） */
+  --pen: #2b5ea7; /* 差し色（青ペン） */
+  --pen-soft: rgba(43, 94, 167, 0.1);
+  --on-pen: #ffffff; /* 青ペン色の上の文字 */
+  --red: #b53a2c; /* 削除・エラー（赤ペン） */
+  --red-soft: rgba(181, 58, 44, 0.08);
+  --amber: #9a6a12; /* 注意（重複など） */
 
-  --radius: 12px;
-  --radius-small: 8px;
+  --font-ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Noto Sans JP', Meiryo,
+    system-ui, sans-serif;
+  --font-en: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman', serif;
+
+  --radius: 6px;
   --content-width: 560px; /* PCでもスマホのような操作感にするための最大幅 */
-  --nav-height: 64px;
+  --nav-height: 58px;
 
-  color-scheme: dark;
-  font-family:
-    system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
-    Meiryo, sans-serif;
+  color-scheme: light;
+  font-family: var(--font-ja);
+  font-size: 16px;
   line-height: 1.6;
-  color: var(--color-text);
-  background-color: var(--color-bg);
+  color: var(--ink);
+  background-color: var(--paper);
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 端末がダークモードのとき（夜のノート） */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1b18;
+    --sheet: #24231f;
+    --ink: #ebe6db;
+    --ink-soft: #a7a094;
+    --ink-faint: #767065;
+    --rule: #34322c;
+    --rule-strong: #4a463e;
+    --pen: #8db1e6;
+    --pen-soft: rgba(141, 177, 230, 0.12);
+    --on-pen: #14223a;
+    --red: #e58a7c;
+    --red-soft: rgba(229, 138, 124, 0.1);
+    --amber: #e0b35a;
+    color-scheme: dark;
+  }
 }
 
 /* ---------- 基本 ---------- */
@@ -41,7 +70,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--color-bg);
+  background-color: var(--paper);
   overflow-x: hidden; /* 横スクロールを発生させない */
 }
 
@@ -66,13 +95,18 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 /* キーボード操作時のフォーカスをはっきり見せる */
 :focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 2px solid var(--pen);
   outline-offset: 2px;
+}
+
+/* 英語の文字は本のような書体で表示する */
+[lang='en'] {
+  font-family: var(--font-en);
 }
 
 /* 画面には表示しないが、読み上げソフトには伝える文字 */
@@ -89,7 +123,7 @@ button:disabled {
 }
 
 .muted {
-  color: var(--color-sub);
+  color: var(--ink-soft);
 }
 
 .center-text {
@@ -97,7 +131,7 @@ button:disabled {
 }
 
 .error-text {
-  color: var(--color-danger);
+  color: var(--red);
 }
 
 /* ---------- レイアウト ---------- */
@@ -113,18 +147,17 @@ button:disabled {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--paper);
+  border-bottom: 1px solid var(--rule);
 }
 
 .app-header-inner {
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 6px 8px 6px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 4px;
 }
 
 .app-main {
@@ -148,56 +181,57 @@ button:disabled {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: var(--color-text);
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: var(--font-en);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .brand svg {
-  color: var(--color-accent);
+  color: var(--pen);
 }
 
 .brand-large {
-  font-size: 1.25rem;
-}
-
-.hero-title {
-  font-size: clamp(1.75rem, 7vw, 2.25rem);
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-size: 1.5rem;
 }
 
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
 .page-title {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.count-badge {
-  font-size: 0.9rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  color: var(--color-sub);
+  line-height: 1.3;
 }
 
-/* ---------- カード ---------- */
+/* 件数は控えめな小さい文字で */
+.count-badge {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.section-label {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* 一段明るい紙（入力欄・単語カードなど、最小限だけ使う） */
 .card {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   padding: 16px;
 }
@@ -207,51 +241,68 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 48px; /* スマホで押しやすい高さ */
+  gap: 6px;
+  min-height: 46px; /* スマホで押しやすい高さ */
   padding: 10px 18px;
   border: 1px solid transparent;
-  border-radius: var(--radius-small);
+  border-radius: var(--radius);
   font-weight: 600;
   text-align: center;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 
+/* 主な操作：青ペンで塗る */
 .btn-primary {
-  background-color: var(--color-accent);
-  color: var(--color-accent-text);
+  background-color: var(--pen);
+  color: var(--on-pen);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #bef264;
+  filter: brightness(1.08);
 }
 
+/* 補助の操作：線だけ */
 .btn-secondary {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  background-color: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #4b5563;
+  background-color: var(--pen-soft);
 }
 
 .btn-danger {
-  background-color: var(--color-danger);
-  color: #1f0a0a;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: #fca5a5;
+  background-color: var(--red);
+  color: #fff;
 }
 
 .btn-ghost {
   background-color: transparent;
-  color: var(--color-sub);
+  color: var(--ink-soft);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  color: var(--color-text);
-  background-color: var(--color-card);
+  color: var(--ink);
+}
+
+/* 文字だけのボタン（「＋ 追加」「削除」など） */
+.btn-text {
+  min-height: 40px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: var(--pen);
+  font-weight: 600;
+}
+
+.btn-text:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-text-danger {
+  color: var(--red);
 }
 
 .btn-block {
@@ -259,44 +310,35 @@ button:disabled {
 }
 
 .btn-large {
-  min-height: 54px;
+  min-height: 52px;
   font-size: 1.05rem;
 }
 
 .btn-small {
-  min-height: 40px;
+  min-height: 38px;
   padding: 6px 12px;
   font-size: 0.9rem;
-}
-
-.btn-icon {
-  width: 48px;
-  padding: 0;
-  flex-shrink: 0;
 }
 
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: none;
-  border-radius: var(--radius-small);
+  border-radius: var(--radius);
   background: transparent;
-  color: var(--color-sub);
+  color: var(--ink-soft);
 }
 
-.icon-btn:hover {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+.icon-btn:hover:not(:disabled) {
+  color: var(--ink);
+  background-color: var(--pen-soft);
 }
 
-.icon-btn-danger {
-  color: var(--color-danger);
-}
-
-.icon-btn-danger:hover {
-  color: var(--color-danger);
+.icon-btn-danger,
+.icon-btn-danger:hover:not(:disabled) {
+  color: var(--red);
 }
 
 /* ---------- 入力欄 ---------- */
@@ -308,23 +350,70 @@ button:disabled {
 }
 
 .field label {
-  color: var(--color-sub);
-  font-size: 0.95rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
-/* 登録フォーム：英語と日本語訳を1つのカードにまとめる（入力欄ごとの枠は付けない） */
+.input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  font-size: 1rem; /* 16px未満だとiPhoneで自動ズームされるため */
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--pen);
+  box-shadow: 0 0 0 3px var(--pen-soft);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--red);
+}
+
+.field-error {
+  margin-top: 4px;
+  color: var(--red);
+  font-size: 0.85rem;
+}
+
+/* 重複などの注意（エラーではない） */
+.field-note {
+  margin-top: 4px;
+  color: var(--amber);
+  font-size: 0.85rem;
+}
+
+.alert {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--red);
+  background-color: var(--red-soft);
+  color: var(--red);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+/* 登録フォーム：英語と日本語訳を1枚の紙にまとめ、間は罫線1本だけ */
 .field-group {
   margin-bottom: 12px;
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
+  background-color: var(--sheet);
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-/* どちらかの欄に入力中は、カード全体の枠をアクセントカラーにする */
 .field-group:focus-within {
-  border-color: var(--color-accent);
+  border-color: var(--pen);
+  box-shadow: 0 0 0 3px var(--pen-soft);
 }
 
 .group-field {
@@ -332,29 +421,25 @@ button:disabled {
   padding: 10px 44px 10px 14px; /* 右側はクリアボタンの分あける */
 }
 
-/* 2つ目の欄との間は細い線だけ */
 .group-field + .group-field {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--rule);
 }
 
 .group-field .field-label {
   display: block;
-  color: var(--color-sub);
-  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
-/* 入力中の欄のラベルだけアクセントカラーにして、どこを打っているか分かるようにする */
 .group-field:focus-within .field-label {
-  color: var(--color-accent);
+  color: var(--pen);
 }
 
 .group-field.has-error .field-label {
-  color: var(--color-danger);
+  color: var(--red);
 }
 
-/* 入力欄そのもの：枠・背景なし、文字に合わせて高さが伸びる */
 .group-input {
   display: block;
   width: 100%;
@@ -366,27 +451,22 @@ button:disabled {
   overflow-y: auto;
   min-height: 1.5em; /* 空欄でも1行分の高さを確保する */
   max-height: 40vh;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   line-height: 1.5;
 }
 
 .group-input:focus,
 .group-input:focus-visible {
-  outline: none; /* カード全体の枠とラベルの色で入力中を示す */
+  outline: none; /* 紙全体の枠とラベルの色で入力中を示す */
 }
 
 .group-input::placeholder {
-  color: #6b7280;
-}
-
-.group-field .field-error,
-.group-field .field-note {
-  margin-top: 4px;
+  color: var(--ink-faint);
 }
 
 .clear-btn {
   position: absolute;
-  top: 26px; /* 入力欄の1行目の高さに合わせる */
+  top: 24px; /* 入力欄の1行目の高さに合わせる */
   right: 4px;
   display: grid;
   place-items: center;
@@ -395,25 +475,18 @@ button:disabled {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--color-sub);
+  color: var(--ink-faint);
 }
 
 .clear-btn:hover {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
-}
-
-/* 重複の注意（エラーではないので控えめな黄色） */
-.field-note {
-  color: #fbbf24;
-  font-size: 0.85rem;
+  color: var(--ink);
 }
 
 /* キーボード操作のヒント（タッチ操作の端末では表示しない） */
 .keyboard-hint {
-  margin: -4px 0 12px;
-  color: var(--color-sub);
-  font-size: 0.78rem;
+  margin: -2px 0 12px;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
 }
 
 @media (hover: none) {
@@ -429,7 +502,7 @@ button:disabled {
   gap: 6px;
   min-height: 1.5em;
   margin-bottom: 8px;
-  color: var(--color-accent);
+  color: var(--pen);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
@@ -438,53 +511,68 @@ button:disabled {
   display: none;
 }
 
-.input {
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 12px;
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-small);
-  font-size: 1rem; /* 16px未満だとiPhoneで自動ズームされるため */
+/* ---------- 切り替え（すべて / 単語 / フレーズ など）：下線のタブ ---------- */
+.segmented {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--rule);
 }
 
-textarea.input {
-  resize: vertical;
-  line-height: 1.5;
-}
-
-.input:focus-visible {
-  outline-offset: 0;
-  border-color: var(--color-accent);
-}
-
-.input[aria-invalid='true'] {
-  border-color: var(--color-danger);
-}
-
-.field-error {
-  color: var(--color-danger);
-  font-size: 0.9rem;
-}
-
-.alert {
-  margin-bottom: 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-small);
-  background-color: rgba(248, 113, 113, 0.1);
-  color: var(--color-danger);
+.segmented-btn {
+  position: relative;
+  min-height: 40px;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
   font-size: 0.95rem;
-  overflow-wrap: anywhere;
+}
+
+.segmented-btn:hover {
+  color: var(--ink);
+}
+
+.segmented-btn.is-active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 選択中は青ペンの下線 */
+.segmented-btn.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: var(--pen);
+}
+
+.segmented-hint {
+  margin-left: 4px;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* 登録フォームの 単語 / フレーズ 切り替え */
+.form-category {
+  margin-bottom: 14px;
 }
 
 /* ---------- ログイン ---------- */
 .login-box {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
+}
+
+.login-lead {
+  margin-bottom: 16px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
 .login-card {
@@ -505,93 +593,111 @@ textarea.input {
 code {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.9em;
-  color: var(--color-accent);
+  color: var(--pen);
 }
 
-/* ---------- ホーム ---------- */
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+/* ---------- 罫線の一覧（ホーム・ストック・フォルダで共通） ---------- */
+.ruled-list {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--rule);
 }
 
-.stat-card {
+.ruled-list > li {
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ホーム：件数の行（押すとストック画面へ） */
+.count-row {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 4px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
   text-align: left;
-  color: var(--color-text);
-  transition: border-color 0.15s;
 }
 
-.stat-card:hover {
-  border-color: var(--color-accent);
+.count-row:hover {
+  background-color: var(--pen-soft);
 }
 
-.stat-label {
-  color: var(--color-sub);
+.count-row-label {
+  flex: 1;
 }
 
-.stat-value {
-  font-size: clamp(2.5rem, 12vw, 3.25rem);
-  font-weight: 800;
-  line-height: 1.1;
+.count-row-value {
+  font-family: var(--font-en);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---------- 検索・一覧 ---------- */
+.count-row-arrow {
+  align-self: center;
+  color: var(--ink-faint);
+}
+
+/* ---------- 検索 ---------- */
 .search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  color: var(--color-sub);
+  padding: 0 4px;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--ink-faint);
 }
 
 .search-bar:focus-within {
-  border-color: var(--color-accent);
+  border-color: var(--pen);
+  color: var(--pen);
 }
 
 .search-input {
   flex: 1;
   min-width: 0;
-  min-height: 48px;
+  min-height: 44px;
   border: none;
   background: transparent;
   font-size: 1rem;
-  color: var(--color-text);
+  color: var(--ink);
+}
+
+.search-input::placeholder {
+  color: var(--ink-faint);
 }
 
 .search-input:focus-visible {
-  outline: none; /* 外側の .search-bar で強調する */
+  outline: none; /* 下線の色で入力中を示す */
 }
 
 .result-count {
-  min-height: 1.2em;
   margin-top: -8px;
-  color: var(--color-sub);
-  font-size: 0.85rem;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
 }
 
 .result-count:empty {
   display: none;
 }
 
-.stock-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stock-card {
+/* ---------- ストック一覧（1行 = 1件。押すと編集） ---------- */
+.stock-row {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 8px 12px 16px;
+  padding: 12px 4px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.stock-row:hover {
+  background-color: var(--pen-soft);
 }
 
 .stock-text {
@@ -599,72 +705,91 @@ code {
   min-width: 0;
 }
 
-/* 長いフレーズも省略せずに折り返す */
+/* 長いフレーズも省略せずに折り返す（ボタンの中なので span を縦に並べる） */
+.stock-english,
+.stock-japanese {
+  display: block;
+}
+
 .stock-english {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.12rem;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
 .stock-japanese {
-  color: var(--color-sub);
-  font-size: 0.95rem;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
 
-.stock-actions {
-  display: flex;
+/* 「すべて」表示のときに付ける 単語 / フレーズ の小さな文字 */
+.stock-category {
+  margin-left: 8px;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+
+.stock-row-arrow {
   flex-shrink: 0;
+  color: var(--ink-faint);
 }
 
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
   padding: 28px 16px;
+  color: var(--ink-soft);
   text-align: center;
   overflow-wrap: anywhere;
 }
 
-/* ---------- ランダム出題 ---------- */
-.segmented {
-  display: grid;
-  grid-auto-columns: 1fr;
-  grid-auto-flow: column;
-  gap: 6px;
+/* ---------- 復習（単語カード） ---------- */
+.quiz-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.segmented-btn {
-  min-height: 44px;
-  padding: 6px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-small);
-  background-color: var(--color-card);
-  color: var(--color-sub);
-  font-size: 0.95rem;
+.quiz-controls .segmented {
+  flex: 1;
 }
 
-.segmented-btn.is-active {
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-text);
-  font-weight: 700;
+/* 出題方向の切り替え（押すたびに 日→英 / 英→日 が入れ替わる） */
+.direction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 6px 2px;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
-.segmented-sub .segmented-btn {
-  font-size: 0.9rem;
+.direction-btn:hover {
+  color: var(--ink);
 }
 
+/* 単語カード：紙のカードを1枚置いたような見た目。押すと答えが出る */
 .quiz-card {
   position: relative;
-  min-height: 240px;
+  width: 100%;
+  min-height: 260px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 40px 20px 28px;
+  gap: 10px;
+  padding: 40px 20px 32px;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 var(--rule), 0 6px 18px -12px rgba(0, 0, 0, 0.25);
+  color: var(--ink);
   text-align: center;
   overflow-wrap: anywhere;
 }
@@ -672,73 +797,73 @@ code {
 .quiz-badge {
   position: absolute;
   top: 12px;
-  left: 12px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  color: var(--color-sub);
-  font-size: 0.8rem;
+  left: 14px;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
 }
 
 .quiz-question {
-  font-size: clamp(1.4rem, 6vw, 1.85rem);
-  font-weight: 800;
+  font-size: clamp(1.45rem, 6vw, 1.9rem);
   line-height: 1.35;
+}
+
+.quiz-question:lang(ja) {
+  font-weight: 600;
+}
+
+.quiz-tap-hint {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
 }
 
 .quiz-answer-area {
   width: 100%;
 }
 
+.quiz-answer,
+.quiz-tap-hint {
+  display: block;
+}
+
 .quiz-answer {
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--color-border);
-  color: var(--color-accent);
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--rule-strong);
+  color: var(--pen);
   font-size: clamp(1.15rem, 5vw, 1.4rem);
-  font-weight: 700;
 }
 
 .quiz-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-/* ---------- フォルダ ---------- */
-/* ヘッダーのフォルダ切り替えボタン（例：📁 しゅん ▾） */
-.brand {
-  flex-shrink: 0;
-}
-
+/* ---------- ヘッダー ---------- */
+/* フォルダ切り替え（例：しゅん ▾） */
 .folder-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  max-width: 55%;
+  max-width: 50%;
   min-height: 40px;
   margin-left: auto;
-  padding: 6px 10px 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background-color: var(--color-card);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.folder-btn:hover {
+  background-color: var(--pen-soft);
 }
 
 .folder-btn svg {
   flex-shrink: 0;
-  color: var(--color-accent);
-}
-
-.folder-btn svg:last-child {
-  color: var(--color-sub);
-}
-
-.folder-btn:hover {
-  border-color: var(--color-accent);
+  color: var(--ink-faint);
 }
 
 /* 長いフォルダ名は「…」で省略する */
@@ -748,16 +873,29 @@ code {
   white-space: nowrap;
 }
 
-/* 幅の狭いスマホでは「English Stock」「Logout」の文字を省き、アイコンだけにする */
+.header-icon-btn {
+  flex-shrink: 0;
+}
+
+/* フォルダ切り替えが無い画面では、右側のボタンを右寄せ */
+.app-header-inner > .brand + .header-icon-btn {
+  margin-left: auto;
+}
+
+/* 幅の狭いスマホでは「Logout」の文字を省き、アイコンだけにする */
+.logout-btn {
+  padding: 6px 8px;
+}
+
 @media (max-width: 420px) {
-  .brand-text,
   .logout-label {
     display: none;
   }
 }
 
+/* ---------- フォルダ ---------- */
 .folder-lead {
-  margin: -4px 0 12px;
+  margin: -4px 0 14px;
   font-size: 0.9rem;
 }
 
@@ -765,29 +903,21 @@ code {
   list-style: none;
   padding: 0;
   margin-bottom: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background-color: var(--color-card);
-  overflow: hidden;
+  border-top: 1px solid var(--rule);
 }
 
 .folder-row {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 4px 4px 0;
-}
-
-.folder-row + .folder-row {
-  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--rule);
 }
 
 .folder-row-danger {
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  padding: 12px;
-  background-color: rgba(248, 113, 113, 0.08);
+  padding: 12px 4px;
 }
 
 .folder-select {
@@ -796,22 +926,21 @@ code {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 48px;
-  padding: 8px 12px;
+  min-height: 50px;
+  padding: 8px 4px;
   border: none;
-  border-radius: var(--radius-small);
   background: transparent;
-  color: var(--color-text);
+  color: var(--ink);
   text-align: left;
 }
 
 .folder-select:hover:not(:disabled) {
-  background-color: var(--color-secondary);
+  background-color: var(--pen-soft);
 }
 
 .folder-select svg {
   flex-shrink: 0;
-  color: var(--color-sub);
+  color: var(--ink-faint);
 }
 
 .folder-row.is-current .folder-select {
@@ -819,7 +948,7 @@ code {
 }
 
 .folder-row.is-current .folder-select svg {
-  color: var(--color-accent);
+  color: var(--pen);
 }
 
 .folder-select-name {
@@ -830,15 +959,15 @@ code {
 
 .folder-select-count {
   margin-left: auto;
-  color: var(--color-sub);
+  color: var(--ink-faint);
   font-size: 0.85rem;
   font-weight: 400;
   white-space: nowrap;
 }
 
 .folder-delete-text {
-  color: var(--color-danger);
-  font-size: 0.95rem;
+  color: var(--red);
+  font-size: 0.92rem;
   overflow-wrap: anywhere;
 }
 
@@ -853,7 +982,7 @@ code {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 8px 8px 12px;
+  padding: 8px 4px;
 }
 
 .folder-add {
@@ -883,47 +1012,10 @@ code {
 }
 
 .folder-setup-icon {
-  color: var(--color-accent);
-}
-
-/* ---------- ストック画面の種類表示 ---------- */
-/* All 表示のときに日本語訳の前に付ける Word / Phrase の印 */
-.stock-category {
-  display: inline-block;
-  margin-right: 8px;
-  padding: 0 7px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-sub);
-  font-size: 0.7rem;
-  line-height: 1.6;
-  vertical-align: 1px;
-}
-
-/* 登録フォームの Word / Phrase 切り替え */
-.form-category {
-  margin-bottom: 12px;
-}
-
-.segmented-hint {
-  margin-left: 6px;
-  font-size: 0.75rem;
-  font-weight: 400;
-  opacity: 0.75;
+  color: var(--pen);
 }
 
 /* ---------- パスワード変更 ---------- */
-.header-icon-btn {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-}
-
-/* フォルダ切り替えボタンがある画面では右寄せ、無い画面ではパスワードボタンを右寄せ */
-.app-header-inner > .brand + .header-icon-btn {
-  margin-left: auto;
-}
-
 .password-done {
   display: flex;
   flex-direction: column;
@@ -937,8 +1029,8 @@ code {
   right: 0;
   bottom: 0;
   z-index: 10;
-  background-color: var(--color-bg);
-  border-top: 1px solid var(--color-border);
+  background-color: var(--paper);
+  border-top: 1px solid var(--rule);
   padding-bottom: env(safe-area-inset-bottom); /* iPhoneのホームバー対策 */
 }
 
@@ -952,6 +1044,7 @@ code {
 }
 
 .nav-btn {
+  position: relative;
   width: 100%;
   height: var(--nav-height);
   display: flex;
@@ -961,73 +1054,79 @@ code {
   gap: 2px;
   border: none;
   background: transparent;
-  color: var(--color-sub);
+  color: var(--ink-faint);
 }
 
 .nav-btn:hover {
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 .nav-btn.is-active {
-  color: var(--color-accent);
+  color: var(--ink);
+}
+
+/* 表示中の画面は、上に青ペンの短い線 */
+.nav-btn.is-active::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 28px;
+  height: 2px;
+  transform: translateX(-50%);
+  background-color: var(--pen);
 }
 
 .nav-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 /* ---------- モーダル ---------- */
 .modal {
-  width: min(calc(100% - 32px), 480px);
+  width: min(calc(100% - 24px), 480px);
   max-height: calc(100dvh - 32px);
   padding: 0;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.45);
 }
 
 .modal::backdrop {
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(20, 18, 14, 0.45);
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 18px 18px 20px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .modal-title {
-  margin-bottom: 16px;
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-
-/* タイトルと閉じるボタンを横に並べる */
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.modal-header .modal-title {
-  margin-bottom: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .modal-header .icon-btn {
-  margin: -6px -10px 0 0;
+  margin-right: -8px;
 }
 
 .modal-title-small {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
 }
 
 .confirm-detail {
-  margin-bottom: 16px;
+  margin: 8px 0 16px;
   padding: 10px 12px;
-  border-radius: var(--radius-small);
-  background-color: var(--color-card);
-  color: var(--color-sub);
+  border-left: 3px solid var(--rule-strong);
+  color: var(--ink-soft);
   overflow-wrap: anywhere;
 }
 
@@ -1044,6 +1143,22 @@ code {
 
 .modal-actions-row .btn {
   flex: 1;
+}
+
+/* 編集フォーム下部の「削除」と、その確認 */
+.form-delete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
+.form-delete-text {
+  color: var(--red);
+  font-size: 0.9rem;
 }
 
 /* モーダル表示中は後ろの画面がスクロールしないようにする */

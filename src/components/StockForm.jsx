@@ -24,10 +24,19 @@ import { toErrorMessage } from '../utils/errors'
  *   defaultCategory?: 'word' | 'phrase' | null, // 追加時の種類（null なら英語の内容から自動で判定）
  *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じフォルダ）
  *   onSubmit: (values: { category: string, english: string, japanese: string }) => Promise<void>,
+ *   onDelete?: () => Promise<void>,  // 編集時だけ：このデータを削除する（確認してから実行）
  *   onClose: () => void,
  * }} props
  */
-export default function StockForm({ mode, initialValues, defaultCategory = null, existingStocks = [], onSubmit, onClose }) {
+export default function StockForm({
+  mode,
+  initialValues,
+  defaultCategory = null,
+  existingStocks = [],
+  onSubmit,
+  onDelete,
+  onClose,
+}) {
   const id = useId()
   const englishRef = useRef(null)
   const japaneseRef = useRef(null)
@@ -35,7 +44,7 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
   // 編集時は既存の内容を初期値にする
   const [english, setEnglish] = useState(initialValues?.english ?? '')
   const [japanese, setJapanese] = useState(initialValues?.japanese ?? '')
-  // 種類（Word / Phrase）。編集時は今の種類、追加時は表示中の絞り込み、All なら自動判定
+  // 種類（単語 / フレーズ）。編集時は今の種類、追加時は表示中の絞り込み、「すべて」なら自動判定
   const [category, setCategory] = useState(initialValues?.category ?? defaultCategory ?? 'word')
   // 種類が決まっているか（決まっていなければ、英語の入力に合わせて自動で切り替える）
   // 画面表示には使わないので ref で持つ（直後の入力でも確実に最新の値を参照できる）
@@ -48,8 +57,10 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
   const savingRef = useRef(false)
 
   const isAdd = mode === 'add'
-  const categoryLabel = category === 'word' ? 'Word' : 'Phrase'
-  const title = isAdd ? `Add a ${categoryLabel}` : `Edit ${categoryLabel}`
+  const categoryLabel = category === 'word' ? '単語' : 'フレーズ'
+  const title = isAdd ? `${categoryLabel}を追加` : `${categoryLabel}を編集`
+  // 削除の確認を表示中か（編集時のみ）
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const isEmpty = english.trim() === '' && japanese.trim() === ''
 
   // 同じ英語がすでに登録されていないか（編集中のデータ自身は除く）
@@ -139,6 +150,23 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
     categoryFixedRef.current = true
   }
 
+  // 削除：確認ボタンが押されたら実行し、成功したらフォームを閉じる。失敗したら内容は残してエラーを表示
+  async function handleDelete() {
+    if (savingRef.current) return
+    savingRef.current = true
+    setSaving(true)
+    setSubmitError('')
+    try {
+      await onDelete()
+      onClose()
+      return
+    } catch (err) {
+      setSubmitError(toErrorMessage(err, '削除に失敗しました。'))
+    }
+    savingRef.current = false
+    setSaving(false)
+  }
+
   // 保存中は閉じられないようにする
   function requestClose() {
     if (!savingRef.current) onClose()
@@ -168,11 +196,11 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
           </button>
         </div>
 
-        {/* 種類の切り替え（Word / Phrase） */}
+        {/* 種類の切り替え（単語 / フレーズ） */}
         <div className="segmented form-category" role="group" aria-label="種類">
           {[
-            { value: 'word', label: 'Word', hint: '英単語' },
-            { value: 'phrase', label: 'Phrase', hint: 'フレーズ' },
+            { value: 'word', label: '単語' },
+            { value: 'phrase', label: 'フレーズ' },
           ].map((option) => (
             <button
               key={option.value}
@@ -183,7 +211,6 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
               disabled={saving}
             >
               {option.label}
-              <span className="segmented-hint">{option.hint}</span>
             </button>
           ))}
         </div>
@@ -192,13 +219,13 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
         <div className="field-group">
           <InputField
             id={`${id}-english`}
-            label="English"
+            label="英語"
             hint="英語"
             inputRef={englishRef}
             value={english}
             onChange={changeEnglish}
             onKeyDown={(e) => handleKeyDown(e, () => japaneseRef.current?.focus())}
-            placeholder={category === 'word' ? 'e.g. Ambiguous' : 'e.g. It depends on the situation.'}
+            placeholder={category === 'word' ? 'ambiguous' : 'It depends on the situation.'}
             lang="en"
             autoCapitalize="sentences"
             enterKeyHint="next"
@@ -221,7 +248,7 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
             value={japanese}
             onChange={changeJapanese}
             onKeyDown={(e) => handleKeyDown(e, () => save(false))}
-            placeholder={category === 'word' ? '例：曖昧な' : '例：状況によります。'}
+            placeholder={category === 'word' ? '曖昧な' : '状況によります。'}
             lang="ja"
             enterKeyHint="done"
             error={fieldErrors.japanese}
@@ -253,13 +280,46 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
         <div className={`modal-actions${isAdd ? ' modal-actions-row' : ''}`}>
           {isAdd && (
             <button type="button" className="btn btn-secondary" onClick={() => save(true)} disabled={saving}>
-              Save &amp; Next
+              保存して次へ
             </button>
           )}
           <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? '保存中…' : '保存'}
           </button>
         </div>
+
+        {/* 編集時だけ：削除（押すと確認が出る） */}
+        {onDelete && (
+          <div className="form-delete">
+            {confirmingDelete ? (
+              <>
+                <span className="form-delete-text">このデータを削除しますか？</span>
+                <span className="folder-row-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={saving}
+                  >
+                    やめる
+                  </button>
+                  <button type="button" className="btn btn-danger btn-small" onClick={handleDelete} disabled={saving}>
+                    {saving ? '削除中…' : '削除する'}
+                  </button>
+                </span>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-text btn-text-danger"
+                onClick={() => setConfirmingDelete(true)}
+                disabled={saving}
+              >
+                削除
+              </button>
+            )}
+          </div>
+        )}
       </form>
     </Modal>
   )
