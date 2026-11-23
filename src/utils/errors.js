@@ -8,7 +8,7 @@ export function toErrorMessage(error, fallback = 'エラーが発生しました
   const code = String(error?.code ?? '')
 
   if (/invalid login credentials/i.test(message)) {
-    return 'メールアドレスまたはパスワードが正しくありません。'
+    return 'IDまたはパスワードが正しくありません。'
   }
   if (/should be different from the old password|same_password/i.test(message + code)) {
     return '今と同じパスワードです。別のパスワードにしてください。'
@@ -20,7 +20,7 @@ export function toErrorMessage(error, fallback = 'エラーが発生しました
     return '安全のため、いったんログアウトしてログインし直してから変更してください。'
   }
   if (/email not confirmed/i.test(message)) {
-    return 'メールアドレスの確認が完了していません。Supabase Dashboard でユーザーを確認済みにしてください。'
+    return 'このアカウントは確認が完了していません。Supabase Dashboard でユーザーを作るときに「Auto Confirm User」にチェックを入れてください。'
   }
   if (/failed to fetch|networkerror|network request failed|load failed/i.test(message)) {
     return '通信エラーが発生しました。インターネット接続を確認して、もう一度お試しください。'

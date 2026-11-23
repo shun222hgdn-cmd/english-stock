@@ -165,7 +165,14 @@ npm install
 
 1. 左メニュー **Authentication** → **Users**
 2. **Add user** → **Create new user**
-3. メールアドレスとパスワードを入力し、**Auto Confirm User** にチェックを入れて **Create user**
+3. **Email address** に `ID@english-stock.invalid`（例：ID を `shun` にするなら `shun@english-stock.invalid`）、**Password** にパスワードを入力
+4. **Auto Confirm User** にチェックを入れて **Create user**
+
+アプリのログイン画面では **ID（例：shun）とパスワード**だけを入力します。アプリが自動で `@english-stock.invalid` を付けて Supabase に送ります（`src/utils/loginId.js`）。
+
+- ID に使えるのは半角英数字・`-`・`_`（32文字以内）。大文字・小文字は区別しません。
+- `.invalid` は「実在できない」と規格で決められたドメインです。メールは届きませんが、このアプリはメールを使わないので問題ありません。実在するドメインにすると、その持ち主にパスワード再設定メールが届く恐れがあるため、変更しないでください。
+- 本物のメールアドレスで作ったアカウントも、ログイン画面にメールアドレスをそのまま入力すればログインできます。
 
 ### 7.4 新規ユーザー登録を無効にする（重要）
 

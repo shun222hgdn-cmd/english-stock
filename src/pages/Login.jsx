@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { LogoIcon } from '../components/Icons'
 import { toErrorMessage } from '../utils/errors'
+import { toLoginEmail } from '../utils/loginId'
 
 /**
  * ログイン画面。新規会員登録は設けず、Supabase Dashboard で作成したアカウントでログインする。
+ * ID（例：shun）とパスワードでログインする。ID は Supabase 用のアドレスに自動で変換する（utils/loginId.js）。
+ * 以前のメールアドレスのアカウントも、そのまま入力すればログインできる。
+ *
  * @param {{ onSignIn: (email: string, password: string) => Promise<void> }} props
  */
 export default function Login({ onSignIn }) {
-  const [email, setEmail] = useState('')
+  const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,15 +20,20 @@ export default function Login({ onSignIn }) {
     event.preventDefault()
     if (loading) return
 
-    if (!email.trim() || !password) {
-      setError('メールアドレスとパスワードを入力してください。')
+    const { email, error: idError } = toLoginEmail(loginId)
+    if (idError) {
+      setError(idError)
+      return
+    }
+    if (!password) {
+      setError('パスワードを入力してください。')
       return
     }
 
     setLoading(true)
     setError('')
     try {
-      await onSignIn(email.trim(), password)
+      await onSignIn(email, password)
       // 成功すると認証状態の変化を App が受け取り、ホーム画面に切り替わる
     } catch (err) {
       setError(toErrorMessage(err, 'ログインに失敗しました。'))
@@ -43,16 +52,21 @@ export default function Login({ onSignIn }) {
 
         <form className="card login-card" onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <label htmlFor="login-email">メールアドレス</label>
+            <label htmlFor="login-id">ID</label>
             <input
-              id="login-email"
+              id="login-id"
               className="input"
-              type="email"
-              inputMode="email"
+              type="text"
               autoComplete="username"
               autoCapitalize="none"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              autoCorrect="off"
+              spellCheck="false"
+              placeholder="例：shun"
+              value={loginId}
+              onChange={(e) => {
+                setLoginId(e.target.value)
+                if (error) setError('')
+              }}
               disabled={loading}
               required
             />
@@ -65,7 +79,10 @@ export default function Login({ onSignIn }) {
               type="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (error) setError('')
+              }}
               disabled={loading}
               required
             />

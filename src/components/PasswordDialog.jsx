@@ -4,6 +4,7 @@ import { CheckIcon, CloseIcon, EyeIcon, EyeOffIcon } from './Icons'
 import { PASSWORD_MIN_LENGTH, validateNewPassword } from '../utils/validation'
 import { toErrorMessage } from '../utils/errors'
 import { changePasswordWithAdmin, isAdminPasswordSet, setAdminPassword } from '../services/adminService'
+import { toDisplayId } from '../utils/loginId'
 
 // データベースの関数が返す結果 → 画面に出すメッセージ
 const RESULT_MESSAGES = {
@@ -258,7 +259,7 @@ function ChangePasswordForm({ id, email, busyRef, onDirty, onDone }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <p className="muted folder-lead">{email} のログイン用パスワードを変更します。</p>
+      <p className="muted folder-lead">ID「{toDisplayId(email)}」のログイン用パスワードを変更します。</p>
 
       {/* パスワード管理アプリが「どのアカウントのパスワードか」を判断するための欄（画面には表示しない） */}
       <input type="email" name="username" value={email} autoComplete="username" readOnly hidden />
