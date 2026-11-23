@@ -1,35 +1,31 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Modal from './Modal'
-import { CheckIcon, CloseIcon } from './Icons'
+import { CheckIcon } from './Icons'
 import { CHATGPT_PROMPT, BULK_MAX_ROWS, markDuplicates, parseBulkText } from '../utils/bulkImport'
-import { toErrorMessage } from '../utils/errors'
+import { useBusy } from '../hooks/useBusy'
 
 /**
- * 「まとめて追加」：ChatGPT などで作ったリストを貼り付けて、一度に追加する。
+ * 「まとめて追加」：ChatGPT などで作ったリストを貼り付けて、一度に追加する（文章をコピー＆貼り付けするだけ）。
  * ① 貼り付け → ② 追加する内容を確認（登録済み・形式エラーは除外）→ ③ 追加
- * ChatGPT とアプリを直接つなぐのではなく、文章をコピー＆貼り付けするだけ。
  *
  * @param {{
- *   folderName: string,                                   // 追加先のフォルダ名
+ *   folderName: string,
  *   existingStocks: Array<{ english: string }>,           // 追加先フォルダの登録データ（重複チェック用）
  *   onImport: (items: Array<object>) => Promise<number>,  // 追加して、追加した件数を返す
  *   onClose: () => void,
  * }} props
  */
 export default function BulkImportDialog({ folderName, existingStocks, onImport, onClose }) {
-  const id = useId()
   const [text, setText] = useState('')
   const [step, setStep] = useState('input') // 'input' | 'preview' | 'done'
   const [promptCopied, setPromptCopied] = useState(false)
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const savingRef = useRef(false)
   const [addedCount, setAddedCount] = useState(0)
+  const { busy, error, setError, run } = useBusy('追加できませんでした。')
 
-  // 読み取り結果（確認画面で使う）
   const parsed = useMemo(() => (step === 'input' ? null : parseBulkText(text)), [step, text])
   const rows = useMemo(() => (parsed ? markDuplicates(parsed.rows, existingStocks) : []), [parsed, existingStocks])
   const toAdd = rows.filter((row) => !row.duplicate)
+  const skipped = rows.length - toAdd.length + (parsed?.errors.length ?? 0)
 
   async function copyPrompt() {
     try {
@@ -41,53 +37,27 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
   }
 
   function readText() {
+    if (!text.trim()) return setError('追加したいリストを貼り付けてください。')
     setError('')
-    if (!text.trim()) {
-      setError('追加したいリストを貼り付けてください。')
-      return
-    }
     setStep('preview')
   }
 
-  async function handleImport() {
-    if (savingRef.current || toAdd.length === 0) return
-    savingRef.current = true
-    setSaving(true)
-    setError('')
-    try {
-      const count = await onImport(
-        toAdd.map(({ category, english, japanese, part_of_speech, note }) => ({ category, english, japanese, part_of_speech, note })),
-      )
-      setAddedCount(count)
+  function handleImport() {
+    if (toAdd.length === 0) return
+    run(async () => {
+      setAddedCount(await onImport(toAdd.map(({ line, duplicate, ...item }) => item)))
       setStep('done')
-    } catch (err) {
-      setError(toErrorMessage(err, '追加できませんでした。'))
-    } finally {
-      savingRef.current = false
-      setSaving(false)
-    }
+    })
   }
 
-  function requestClose() {
-    if (!savingRef.current) onClose()
-  }
+  const errorBox = error && (
+    <p className="alert" role="alert">
+      {error}
+    </p>
+  )
 
   return (
-    <Modal
-      titleId={`${id}-title`}
-      onRequestClose={requestClose}
-      closeOnBackdrop={!text.trim() || step === 'done'}
-      className="modal-form"
-    >
-      <div className="modal-header">
-        <h2 id={`${id}-title`} className="modal-title">
-          まとめて追加
-        </h2>
-        <button type="button" className="icon-btn" onClick={requestClose} aria-label="閉じる" disabled={saving}>
-          <CloseIcon size={20} />
-        </button>
-      </div>
-
+    <Modal title="まとめて追加" onClose={onClose} busy={busy} closeOnBackdrop={!text.trim() || step === 'done'} className="modal-form">
       {step === 'done' && (
         <div className="password-done">
           <p className="saved-message">
@@ -122,18 +92,15 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
             </li>
           </ol>
 
-          <label htmlFor={`${id}-text`} className="visually-hidden">
-            追加するリスト
-          </label>
           <textarea
-            id={`${id}-text`}
             className="input bulk-input"
             rows={8}
             value={text}
             onChange={(e) => {
               setText(e.target.value)
-              if (error) setError('')
+              setError('')
             }}
+            aria-label="追加するリスト"
             placeholder={'resilient | 回復力のある | 形容詞\nbreak the ice | 場を和ませる'}
             spellCheck="false"
             autoComplete="off"
@@ -142,25 +109,18 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
           <p className="muted bulk-format">
             1行に1件「英語 | 日本語訳 | 品詞 | コメント」（品詞・コメントは省略可）。表やタブ区切り、このアプリで書き出した CSV もそのまま貼れます。{BULK_MAX_ROWS}件まで。
           </p>
-
-          {error && (
-            <p className="alert" role="alert">
-              {error}
-            </p>
-          )}
-
+          {errorBox}
           <button type="button" className="btn btn-primary btn-block" onClick={readText}>
             読み込む
           </button>
         </>
       )}
 
-      {step === 'preview' && parsed && (
+      {step === 'preview' && (
         <>
           <p className="bulk-summary">
             「{folderName}」に <strong>{toAdd.length}件</strong> 追加します
-            {rows.length - toAdd.length + parsed.errors.length > 0 &&
-              `（追加しないもの ${rows.length - toAdd.length + parsed.errors.length}件）`}
+            {skipped > 0 && `（追加しないもの ${skipped}件）`}
           </p>
           {parsed.tooMany && <p className="field-note">{BULK_MAX_ROWS}件を超えた分は読み込んでいません。分けて追加してください。</p>}
 
@@ -189,23 +149,13 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
             ))}
           </ul>
 
-          {error && (
-            <p className="alert" role="alert">
-              {error}
-            </p>
-          )}
-
+          {errorBox}
           <div className="modal-actions modal-actions-row">
-            <button type="button" className="btn btn-secondary" onClick={() => setStep('input')} disabled={saving}>
+            <button type="button" className="btn btn-secondary" onClick={() => setStep('input')} disabled={busy}>
               戻って直す
             </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleImport}
-              disabled={saving || toAdd.length === 0}
-            >
-              {saving ? '追加中…' : `${toAdd.length}件を追加`}
+            <button type="button" className="btn btn-primary" onClick={handleImport} disabled={busy || toAdd.length === 0}>
+              {busy ? '追加中…' : `${toAdd.length}件を追加`}
             </button>
           </div>
         </>

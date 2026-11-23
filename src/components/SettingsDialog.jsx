@@ -1,18 +1,18 @@
-import { useId, useState } from 'react'
-import { SPEECH_ACCENTS, SPEECH_RATES, isSpeechSupported, speakEnglish } from '../utils/speech'
-import { loadChoice, saveChoice } from '../lib/preferences'
+import { useRef, useState } from 'react'
 import Modal from './Modal'
-import { CheckIcon, ChevronRightIcon, CloseIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
+import Choice from './Choice'
+import { CheckIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
+import { SPEECH_ACCENTS, SPEECH_RATES, isSpeechSupported, loadSpeechSettings, speakEnglish } from '../utils/speech'
+import { saveValue } from '../lib/preferences'
 
 /**
- * 設定（ヘッダーの歯車から開く）。
- * ログイン中の ID と、CSV の書き出し・パスワード変更・ログアウトをまとめる。
+ * 設定（ヘッダーの歯車から開く）：ログイン中の ID、CSV の書き出し、発音、パスワード変更、ログアウト。
  *
  * @param {{
- *   loginId: string,               // ログイン中の ID（メールアドレスのアカウントはアドレス）
- *   folderName?: string,           // 書き出す対象のフォルダ名（表示中のフォルダ）
- *   exportCount: number,           // 書き出す件数
- *   canExport: boolean,            // 書き出せるか（鍵が閉じているフォルダ・フォルダなしは不可）
+ *   loginId: string,
+ *   folderName?: string,   // 書き出す対象（表示中のフォルダ）
+ *   exportCount: number,
+ *   canExport: boolean,    // 鍵が閉じているフォルダ・フォルダなしは書き出せない
  *   onExportCsv: () => void,
  *   signingOut: boolean,
  *   onOpenPassword: () => void,
@@ -31,44 +31,34 @@ export default function SettingsDialog({
   onSignOut,
   onClose,
 }) {
-  const id = useId()
   const [exported, setExported] = useState(false)
-  // 発音の設定（この端末に保存）
-  const [accent, setAccent] = useState(() => loadChoice('speechAccent', SPEECH_ACCENTS.map((a) => a.value), 'en-US'))
-  const [rate, setRate] = useState(() => loadChoice('speechRate', SPEECH_RATES.map((r) => r.value), 'normal'))
+  // 発音の設定（この端末に保存）。選ぶとその場で見本を読み上げる
+  const [speech, setSpeech] = useState(loadSpeechSettings)
+  const speechRef = useRef(speech) // 続けて押しても最新の組み合わせで読む
 
-  function chooseAccent(value) {
-    setAccent(value)
-    saveChoice('speechAccent', value)
-    speakEnglish('Hello', { accent: value, rate }) // 選んだ声をその場で聞ける
-  }
-  function chooseRate(value) {
-    setRate(value)
-    saveChoice('speechRate', value)
-    speakEnglish('Nice to meet you', { accent, rate: value })
-  }
-
-  function handleExport() {
-    onExportCsv()
-    setExported(true)
+  function chooseSpeech(key, value, sample) {
+    const next = { ...speechRef.current, [key]: value }
+    speechRef.current = next
+    setSpeech(next)
+    saveValue(key === 'accent' ? 'speechAccent' : 'speechRate', value)
+    speakEnglish(sample, next)
   }
 
   return (
-    <Modal titleId={`${id}-title`} onRequestClose={onClose}>
-      <div className="modal-header">
-        <h2 id={`${id}-title`} className="modal-title">
-          設定
-        </h2>
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="閉じる">
-          <CloseIcon size={20} />
-        </button>
-      </div>
-
+    <Modal title="設定" onClose={onClose}>
       <p className="muted folder-lead">ログイン中：{loginId}</p>
 
       <ul className="ruled-list">
         <li>
-          <button type="button" className="settings-row" onClick={handleExport} disabled={!canExport}>
+          <button
+            type="button"
+            className="settings-row"
+            onClick={() => {
+              onExportCsv()
+              setExported(true)
+            }}
+            disabled={!canExport}
+          >
             <DownloadIcon size={18} />
             <span className="settings-row-label">
               CSVで書き出す
@@ -92,32 +82,20 @@ export default function SettingsDialog({
           <p className="settings-speech-title">発音</p>
           {isSpeechSupported() ? (
             <>
-              <div className="lang-switch" role="group" aria-label="発音の種類">
-                {SPEECH_ACCENTS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`lang-switch-btn${accent === value ? ' is-active' : ''}`}
-                    aria-pressed={accent === value}
-                    onClick={() => chooseAccent(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="lang-switch" role="group" aria-label="読む速さ">
-                {SPEECH_RATES.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`lang-switch-btn${rate === value ? ' is-active' : ''}`}
-                    aria-pressed={rate === value}
-                    onClick={() => chooseRate(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <Choice
+                variant="lang-switch"
+                label="発音の種類"
+                options={SPEECH_ACCENTS}
+                value={speech.accent}
+                onChange={(value) => chooseSpeech('accent', value, 'Hello')}
+              />
+              <Choice
+                variant="lang-switch"
+                label="読む速さ"
+                options={SPEECH_RATES}
+                value={speech.rate}
+                onChange={(value) => chooseSpeech('rate', value, 'Nice to meet you')}
+              />
             </>
           ) : (
             <p className="settings-row-sub">この端末・ブラウザでは発音を使えません</p>

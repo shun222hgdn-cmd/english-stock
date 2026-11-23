@@ -1,45 +1,44 @@
 import { useState } from 'react'
 import { LogoIcon } from '../components/Icons'
-import { toErrorMessage } from '../utils/errors'
 import { toLoginEmail } from '../utils/loginId'
+import { useBusy } from '../hooks/useBusy'
 
 /**
- * ログイン画面。新規会員登録は設けず、Supabase Dashboard で作成したアカウントでログインする。
- * ID（例：shun）とパスワードでログインする。ID は Supabase 用のアドレスに自動で変換する（utils/loginId.js）。
- * 以前のメールアドレスのアカウントも、そのまま入力すればログインできる。
+ * ログイン画面。新規登録は設けず、Supabase Dashboard で作ったアカウントで、ID（例：shun）とパスワードでログインする。
+ * ID は Supabase 用のアドレスに自動で変換する（utils/loginId.js）。メールアドレスのアカウントもそのまま入力すれば使える。
  *
  * @param {{ onSignIn: (email: string, password: string) => Promise<void> }} props
  */
 export default function Login({ onSignIn }) {
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { busy, error, setError, run } = useBusy('ログインに失敗しました。')
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
-    if (loading) return
-
     const { email, error: idError } = toLoginEmail(loginId)
-    if (idError) {
-      setError(idError)
-      return
-    }
-    if (!password) {
-      setError('パスワードを入力してください。')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    try {
-      await onSignIn(email, password)
-      // 成功すると認証状態の変化を App が受け取り、ホーム画面に切り替わる
-    } catch (err) {
-      setError(toErrorMessage(err, 'ログインに失敗しました。'))
-      setLoading(false)
-    }
+    if (idError) return setError(idError)
+    if (!password) return setError('パスワードを入力してください。')
+    run(() => onSignIn(email, password)) // 成功すると App がメイン画面に切り替える
   }
+
+  const field = (id, label, value, setValue, props) => (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="input"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value)
+          setError('')
+        }}
+        disabled={busy}
+        required
+        {...props}
+      />
+    </div>
+  )
 
   return (
     <main className="center-screen">
@@ -51,42 +50,15 @@ export default function Login({ onSignIn }) {
         <h1 className="login-lead">英単語・フレーズのストック</h1>
 
         <form className="card login-card" onSubmit={handleSubmit} noValidate>
-          <div className="field">
-            <label htmlFor="login-id">ID</label>
-            <input
-              id="login-id"
-              className="input"
-              type="text"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck="false"
-              placeholder="例：shun"
-              value={loginId}
-              onChange={(e) => {
-                setLoginId(e.target.value)
-                if (error) setError('')
-              }}
-              disabled={loading}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="login-password">パスワード</label>
-            <input
-              id="login-password"
-              className="input"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (error) setError('')
-              }}
-              disabled={loading}
-              required
-            />
-          </div>
+          {field('login-id', 'ID', loginId, setLoginId, {
+            type: 'text',
+            autoComplete: 'username',
+            autoCapitalize: 'none',
+            autoCorrect: 'off',
+            spellCheck: 'false',
+            placeholder: '例：shun',
+          })}
+          {field('login-password', 'パスワード', password, setPassword, { type: 'password', autoComplete: 'current-password' })}
 
           {error && (
             <p className="alert" role="alert">
@@ -94,9 +66,8 @@ export default function Login({ onSignIn }) {
             </p>
           )}
 
-          {/* ログイン処理中はボタンを無効化して二重送信を防ぐ */}
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'ログイン中…' : 'ログイン'}
+          <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
+            {busy ? 'ログイン中…' : 'ログイン'}
           </button>
         </form>
       </div>

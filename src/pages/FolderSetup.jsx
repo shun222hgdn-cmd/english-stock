@@ -1,32 +1,21 @@
 import { useState } from 'react'
 import { FolderIcon } from '../components/Icons'
 import { cleanFolderName } from '../utils/folders'
-import { toErrorMessage } from '../utils/errors'
+import { useBusy } from '../hooks/useBusy'
 
 /**
- * フォルダが1つも無いとき（新しいアカウントの初回）に表示する、最初のフォルダ作成画面。
+ * フォルダが1つも無いとき（新しいアカウントの初回）に出す、最初のフォルダ作成画面。
  * @param {{ onCreate: (name: string) => Promise<void> }} props
  */
 export default function FolderSetup({ onCreate }) {
   const [name, setName] = useState('')
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
+  const { busy, error, setError, run } = useBusy('フォルダを作成できませんでした。')
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
-    if (saving) return
     const { value, error: nameError } = cleanFolderName(name)
-    setError(nameError)
-    if (nameError) return
-
-    setSaving(true)
-    try {
-      await onCreate(value)
-      // 成功するとフォルダが追加され、自動的にホーム画面に切り替わる
-    } catch (err) {
-      setError(toErrorMessage(err, 'フォルダを作成できませんでした。'))
-      setSaving(false)
-    }
+    if (nameError) return setError(nameError)
+    run(() => onCreate(value)) // 成功するとフォルダが追加され、単語帳に切り替わる
   }
 
   return (
@@ -49,12 +38,12 @@ export default function FolderSetup({ onCreate }) {
             value={name}
             onChange={(e) => {
               setName(e.target.value)
-              if (error) setError('')
+              setError('')
             }}
             autoComplete="off"
             enterKeyHint="done"
             aria-invalid={Boolean(error)}
-            disabled={saving}
+            disabled={busy}
             autoFocus
           />
           {error && (
@@ -63,8 +52,8 @@ export default function FolderSetup({ onCreate }) {
             </p>
           )}
         </div>
-        <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-          {saving ? '作成中…' : 'フォルダを作成'}
+        <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
+          {busy ? '作成中…' : 'フォルダを作成'}
         </button>
       </form>
     </section>

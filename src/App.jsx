@@ -11,32 +11,21 @@ import Quiz from './pages/Quiz'
 import FolderSetup from './pages/FolderSetup'
 import LockedFolder from './pages/LockedFolder'
 import { useAuth } from './hooks/useAuth'
-import { useStocks } from './hooks/useStocks'
-import { useFolders } from './hooks/useFolders'
+import { useFolders, useStocks } from './hooks/useData'
 import { isSupabaseConfigured } from './lib/supabase'
-import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
+import { loadChoice, loadValue, saveValue } from './lib/preferences'
 import { toDisplayId } from './utils/loginId'
 import { hashFolderPassword, verifyFolderPassword } from './utils/folderLock'
 import { buildCsvFileName, buildStocksCsv } from './utils/csv'
-import { loadChoice, saveChoice } from './lib/preferences'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
 
-/**
- * アプリの入口。
- * Supabase の接続情報が無いときは設定案内を表示する。
- */
+/** アプリの入口。Supabase の接続情報が無いときは設定案内を出す */
 export default function App() {
-  if (!isSupabaseConfigured) return <SetupNotice />
-  return <AuthGate />
+  return isSupabaseConfigured ? <AuthGate /> : <SetupNotice />
 }
 
-/**
- * ログイン状態に応じて表示を切り替える。
- * - 確認中：読み込み表示（個人データは表示しない）
- * - 未ログイン：ログイン画面のみ
- * - ログイン済み：メイン画面
- */
+/** ログイン状態で表示を切り替える（確認中は個人データを出さない） */
 function AuthGate() {
   const { session, authLoading, signIn, signOut } = useAuth()
 
@@ -47,64 +36,40 @@ function AuthGate() {
       </main>
     )
   }
-
   if (!session) return <Login onSignIn={signIn} />
 
-  // key にユーザーIDを指定：ユーザーが変わると MainApp が作り直され、
-  // 前のユーザーの登録データ・出題状態・画面状態がすべて消える
-  return (
-    <MainApp
-      key={session.user.id}
-      userId={session.user.id}
-      email={session.user.email ?? ''}
-      onSignOut={signOut}
-    />
-  )
+  // key：ユーザーが変わると作り直され、前のユーザーのデータや画面の状態はすべて消える
+  return <MainApp key={session.user.id} userId={session.user.id} email={session.user.email ?? ''} onSignOut={signOut} />
 }
 
 /**
- * ログイン後のメイン画面（ヘッダー・各ページ・下部ナビゲーション）。
- * GitHub Pages で再読み込み時に404にならないよう、URLではなく state で画面を切り替える。
- *
- * 1つのアカウントを複数人で使えるよう、データは「フォルダ」ごとに分けて表示する。
- * どの画面も、選んでいるフォルダのデータだけを扱う。
+ * ログイン後のメイン画面。GitHub Pages で再読み込みしても404にならないよう、URLではなく state で画面を切り替える。
+ * 1つのアカウントを複数人で使えるよう、データは「フォルダ」ごとに分け、どの画面も選んでいるフォルダのデータだけを扱う。
  */
 function MainApp({ userId, email, onSignOut }) {
-  // 表示中の画面（'stock'：単語帳 / 'quiz'：暗記）。最初は単語帳
-  const [activePage, setActivePage] = useState('stock')
-  // 単語帳の表示切り替え（すべて / 単語 / フレーズ）。端末に保存し、開き直しても前回の表示で始める
-  const [stockFilter, setStockFilterState] = useState(() =>
-    loadChoice('stockFilter', ['all', 'word', 'phrase'], 'all'),
-  )
-  function setStockFilter(filter) {
-    setStockFilterState(filter)
-    saveChoice('stockFilter', filter)
-  }
+  const [activePage, setActivePage] = useState('stock') // 'stock'：単語帳 / 'quiz'：暗記
+  // 単語帳の表示切り替え（すべて / 単語 / フレーズ）。端末に保存して、開き直しても前回の表示で始める
+  const [stockFilter, setStockFilter] = useState(() => loadChoice('stockFilter', ['all', 'word', 'phrase'], 'all'))
+  const [dialog, setDialog] = useState(null) // 'folders' / 'settings' / 'password'
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
-  const [folderDialogOpen, setFolderDialogOpen] = useState(false)
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
-  const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
-  // 鍵付きフォルダのうち、今開いているもの（別のフォルダに切り替えるか、アプリを閉じると閉じる）
+  // この端末で前回選んだフォルダ（無ければ先頭）と、今開いている鍵付きフォルダ（切り替えるか閉じると閉まる）
+  const [selectedFolderId, setSelectedFolderId] = useState(() => loadValue(`folder:${userId}`))
   const [unlockedFolderId, setUnlockedFolderId] = useState(null)
 
-  const stocksState = useStocks(userId)
-  const foldersState = useFolders(userId)
-  const { stocks, addStock, addStocks, editStock, removeStock, forgetFolderStocks } = stocksState
-  const { folders, addFolder, editFolder, removeFolder, setLock, clearLockWithAdmin } = foldersState
+  const stocksData = useStocks(userId)
+  const foldersData = useFolders(userId)
+  const { stocks } = stocksData
+  const { folders } = foldersData
 
-  // アプリに戻ってきたとき（タブの切り替え・スマホでアプリを開き直したとき）に、
-  // 最新のデータを裏で読み直す。他の端末で登録した分もそのまま反映される。
-  const refreshStocks = stocksState.refresh
-  const refreshFolders = foldersState.refresh
+  // アプリに戻ってきたとき（タブの切り替え・スマホで開き直したとき）に、他の端末での変更も裏で読み直す
+  const { refresh: refreshStocks } = stocksData
+  const { refresh: refreshFolders } = foldersData
   useEffect(() => {
     let lastRefresh = Date.now()
     function handleReturn() {
-      if (document.visibilityState !== 'visible') return
-      // 「表示された」と「フォーカスされた」が続けて起きても、1回だけ読み直す
-      if (Date.now() - lastRefresh < 5000) return
+      // 「表示された」と「フォーカスされた」が続けて起きても1回だけ
+      if (document.visibilityState !== 'visible' || Date.now() - lastRefresh < 5000) return
       lastRefresh = Date.now()
       refreshFolders()
       refreshStocks()
@@ -117,119 +82,57 @@ function MainApp({ userId, email, onSignOut }) {
     }
   }, [refreshStocks, refreshFolders])
 
-  const loading = stocksState.loading || foldersState.loading
-  const error = foldersState.error || stocksState.error
-
-  // 表示中のフォルダと、そのフォルダのデータ
+  const loading = stocksData.loading || foldersData.loading
+  const error = foldersData.error || stocksData.error
   const currentFolder = pickCurrentFolder(folders, selectedFolderId)
   const folderStocks = useMemo(
     () => (currentFolder ? filterByFolder(stocks, currentFolder.id) : []),
     [stocks, currentFolder],
   )
-
-  // フォルダごとの件数（フォルダ切り替え画面に表示）
   const folderCounts = useMemo(() => {
     const result = {}
     for (const stock of stocks) result[stock.folder_id] = (result[stock.folder_id] ?? 0) + 1
     return result
   }, [stocks])
 
-  /** 画面の移動（'stock'：単語帳 / 'quiz'：暗記） */
+  /** 鍵がかかっていない、または今開いているフォルダか */
+  const isFolderOpen = (folder) => !folder.lock_hash || folder.id === unlockedFolderId
+
   function navigate(page) {
     setActivePage(page)
     window.scrollTo(0, 0)
   }
 
   function selectFolder(folderId) {
-    // 別のフォルダに切り替えたら、開いていた鍵付きフォルダはまた閉じる
-    if (folderId !== unlockedFolderId) setUnlockedFolderId(null)
+    if (folderId !== unlockedFolderId) setUnlockedFolderId(null) // 別のフォルダにしたら鍵はまた閉まる
     setSelectedFolderId(folderId)
-    saveFolderPreference(userId, folderId)
+    saveValue(`folder:${userId}`, folderId)
   }
 
-  /** 鍵がかかっていない、または今開いているフォルダか */
-  function isFolderOpen(folder) {
-    return !folder.lock_hash || folder.id === unlockedFolderId
-  }
-
-  /**
-   * 表示中のフォルダの単語・フレーズを CSV ファイルにしてダウンロードする。
-   * ファイルはこの端末の中だけで作られ、どこにも送られない。
-   */
+  /** 表示中のフォルダを CSV にしてダウンロードする（ファイルはこの端末の中だけで作られる） */
   function exportCurrentFolderCsv() {
     if (!currentFolder || !isFolderOpen(currentFolder)) return
-    const csv = buildStocksCsv(folderStocks)
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const url = URL.createObjectURL(new Blob([buildStocksCsv(folderStocks)], { type: 'text/csv;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
     link.download = buildCsvFileName(currentFolder.name)
     document.body.appendChild(link)
     link.click()
     link.remove()
-    // ダウンロードが始まってから、一時的な URL を片付ける
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
-
-  // 鍵付きフォルダを開く（パスワードが正しければ true）
-  async function unlockCurrentFolder(password) {
-    const ok = await verifyFolderPassword(password, currentFolder.lock_hash)
-    if (ok) setUnlockedFolderId(currentFolder.id)
-    return ok
-  }
-
-  // パスワードを忘れたとき：管理者パスワードで鍵を外す
-  async function clearCurrentLockWithAdmin(adminPassword) {
-    const result = await clearLockWithAdmin(currentFolder.id, adminPassword)
-    if (result === 'ok') setUnlockedFolderId(currentFolder.id)
-    return result
-  }
-
-  // 鍵をかける（このあとも、切り替えるまでは開いたまま使える）
-  async function lockFolder(folderId, password) {
-    await setLock(folderId, await hashFolderPassword(password))
-    // 表示中のフォルダに鍵をかけた場合は、その場で締め出さない
-    if (folderId === currentFolder?.id) setUnlockedFolderId(folderId)
-  }
-
-  // 鍵を外す（今のパスワードが正しいときだけ。正しければ true）
-  async function unlockFolderPermanently(folderId, password) {
-    const folder = folders.find((item) => item.id === folderId)
-    if (!folder?.lock_hash || !(await verifyFolderPassword(password, folder.lock_hash))) return false
-    await setLock(folderId, null)
-    return true
-  }
-
-  // 新しいフォルダを作って、そのフォルダに切り替える（最初のフォルダ作成画面用）
-  async function createFirstFolder(name) {
-    const created = await addFolder(name)
-    selectFolder(created.id)
-    navigate('stock')
-  }
-
-  // フォルダを削除したら、中のデータも手元から消す（データベース側は自動で削除される）
-  async function deleteFolder(folderId) {
-    await removeFolder(folderId)
-    forgetFolderStocks(folderId)
-  }
-
-  function reload() {
-    stocksState.reload()
-    foldersState.reload()
   }
 
   async function handleSignOut() {
     setSigningOut(true)
     setSignOutError('')
     try {
-      await onSignOut()
-      // 成功するとログイン画面に切り替わり、この画面のデータは破棄される
+      await onSignOut() // 成功するとログイン画面に切り替わり、この画面のデータは破棄される
     } catch (err) {
       setSignOutError(toErrorMessage(err, 'ログアウトに失敗しました。'))
       setSigningOut(false)
     }
   }
 
-  // 表示中のページの中身
   function renderPage() {
     if (loading) {
       return (
@@ -244,7 +147,14 @@ function MainApp({ userId, email, onSignOut }) {
           <p className="error-text" role="alert">
             {error}
           </p>
-          <button type="button" className="btn btn-secondary" onClick={reload}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              stocksData.reload()
+              foldersData.reload()
+            }}
+          >
             再読み込み
           </button>
         </div>
@@ -252,47 +162,65 @@ function MainApp({ userId, email, onSignOut }) {
     }
     // フォルダが1つも無い（新しいアカウント）→ 最初のフォルダを作ってもらう
     if (!currentFolder) {
-      return <FolderSetup onCreate={createFirstFolder} />
+      return (
+        <FolderSetup
+          onCreate={async (name) => {
+            selectFolder((await foldersData.addFolder(name)).id)
+            navigate('stock')
+          }}
+        />
+      )
     }
-    // 鍵がかかっていて、まだ開いていないフォルダ → パスワード入力の画面
+    // 鍵がかかっていて、まだ開いていないフォルダ
     if (!isFolderOpen(currentFolder)) {
       return (
         <LockedFolder
           key={currentFolder.id}
           folderName={currentFolder.name}
-          onUnlock={unlockCurrentFolder}
-          onClearWithAdmin={clearCurrentLockWithAdmin}
+          onUnlock={async (password) => {
+            const ok = await verifyFolderPassword(password, currentFolder.lock_hash)
+            if (ok) setUnlockedFolderId(currentFolder.id)
+            return ok
+          }}
+          // パスワードを忘れたとき：管理者パスワードで鍵を外す
+          onClearWithAdmin={async (adminPassword) => {
+            const result = await foldersData.clearLockWithAdmin(currentFolder.id, adminPassword)
+            if (result === 'ok') setUnlockedFolderId(currentFolder.id)
+            return result
+          }}
         />
       )
     }
-
-    const stockProps = {
-      stocks: folderStocks,
-      // 登録は表示中のフォルダに入れる
-      onAdd: (input) => addStock({ ...input, folder_id: currentFolder.id }),
-      onEdit: editStock,
-      onDelete: removeStock,
-      // まとめて追加も、表示中のフォルダに入れる
-      onAddMany: (items) => addStocks(currentFolder.id, items),
-      folderName: currentFolder.name,
-    }
-    // key にフォルダIDを指定：フォルダを切り替えると検索や出題の状態がリセットされる
-    if (activePage === 'quiz') {
-      return <Quiz key={currentFolder.id} stocks={folderStocks} />
-    }
+    // key：フォルダを切り替えると検索や出題の状態がリセットされる
+    if (activePage === 'quiz') return <Quiz key={currentFolder.id} stocks={folderStocks} />
     return (
-      <StockPage key={currentFolder.id} {...stockProps} filter={stockFilter} onFilterChange={setStockFilter} />
+      <StockPage
+        key={currentFolder.id}
+        stocks={folderStocks}
+        filter={stockFilter}
+        onFilterChange={(filter) => {
+          setStockFilter(filter)
+          saveValue('stockFilter', filter)
+        }}
+        // 追加は表示中のフォルダに入れる
+        onAdd={(input) => stocksData.addStocks(currentFolder.id, [input])}
+        onAddMany={(items) => stocksData.addStocks(currentFolder.id, items)}
+        onEdit={stocksData.editStock}
+        onDelete={stocksData.removeStock}
+        folderName={currentFolder.name}
+      />
     )
   }
 
   const showMenu = !loading && !error && Boolean(currentFolder)
+  const closeDialog = () => setDialog(null)
 
   return (
     <div className="app-shell">
       <Header
         folderName={showMenu ? currentFolder.name : undefined}
-        onOpenFolders={() => setFolderDialogOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenFolders={() => setDialog('folders')}
+        onOpenSettings={() => setDialog('settings')}
       />
       <main className="app-main">
         {signOutError && (
@@ -304,23 +232,37 @@ function MainApp({ userId, email, onSignOut }) {
       </main>
       {showMenu && <Navigation activePage={activePage} onNavigate={navigate} />}
 
-      {folderDialogOpen && showMenu && (
+      {dialog === 'folders' && showMenu && (
         <FolderDialog
           folders={folders}
           currentId={currentFolder.id}
           counts={folderCounts}
           onSelect={selectFolder}
-          onAdd={addFolder}
-          onRename={editFolder}
-          onDelete={deleteFolder}
+          onAdd={foldersData.addFolder}
+          onRename={foldersData.renameFolder}
+          // 削除したら中のデータも手元から消す（データベース側は自動で削除される）
+          onDelete={async (folderId) => {
+            await foldersData.removeFolder(folderId)
+            stocksData.forgetFolderStocks(folderId)
+          }}
           isFolderOpen={isFolderOpen}
-          onLock={lockFolder}
-          onRemoveLock={unlockFolderPermanently}
-          onClose={() => setFolderDialogOpen(false)}
+          onLock={async (folderId, password) => {
+            await foldersData.setLock(folderId, await hashFolderPassword(password))
+            // 表示中のフォルダに鍵をかけても、その場では締め出さない
+            if (folderId === currentFolder.id) setUnlockedFolderId(folderId)
+          }}
+          // 鍵を外す（今のパスワードが正しいときだけ。正しければ true）
+          onRemoveLock={async (folderId, password) => {
+            const folder = folders.find((item) => item.id === folderId)
+            if (!folder?.lock_hash || !(await verifyFolderPassword(password, folder.lock_hash))) return false
+            await foldersData.setLock(folderId, null)
+            return true
+          }}
+          onClose={closeDialog}
         />
       )}
 
-      {settingsOpen && (
+      {dialog === 'settings' && (
         <SettingsDialog
           loginId={toDisplayId(email)}
           folderName={currentFolder?.name}
@@ -328,22 +270,13 @@ function MainApp({ userId, email, onSignOut }) {
           canExport={Boolean(currentFolder) && isFolderOpen(currentFolder)}
           onExportCsv={exportCurrentFolderCsv}
           signingOut={signingOut}
-          onOpenPassword={() => {
-            // 設定を閉じてから、パスワード変更を開く
-            setSettingsOpen(false)
-            setPasswordDialogOpen(true)
-          }}
+          onOpenPassword={() => setDialog('password')}
           onSignOut={handleSignOut}
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeDialog}
         />
       )}
 
-      {passwordDialogOpen && (
-        <PasswordDialog
-          email={email}
-          onClose={() => setPasswordDialogOpen(false)}
-        />
-      )}
+      {dialog === 'password' && <PasswordDialog email={email} onClose={closeDialog} />}
     </div>
   )
 }

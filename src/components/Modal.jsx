@@ -1,71 +1,81 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
+import { CloseIcon } from './Icons'
 
 /**
- * モーダルの共通部品（登録・編集フォームと削除確認ダイアログで使う）。
- * ブラウザ標準の <dialog> を使うことで、次の操作に対応している。
- * - 開いている間は背景を操作できない（フォーカスがモーダル内に留まる）
- * - Esc キーで閉じる
- * - 閉じたら、開く前にフォーカスしていたボタンにフォーカスを戻す
- *
- * 表示している間だけ親コンポーネントで描画する前提（表示 = マウント）。
- * 中に data-autofocus 属性の要素があれば、開いたときにそこへカーソルを置く（文末に合わせる）。
+ * ダイアログの共通部品（表示している間だけ描画する前提）。ブラウザ標準の <dialog> を使うので、
+ * 背景は操作できず、Esc で閉じ、閉じたら元のボタンにフォーカスが戻る。
+ * 上にタイトルと × を並べる。header を渡すと、その中身に置き換える（ラベルは labelId の要素）。
+ * 中に data-autofocus の要素があれば、開いたときにそこへカーソルを置く（文末に）。
  *
  * @param {{
- *   titleId: string,
- *   onRequestClose: () => void,   // Esc キーや背景クリックで閉じようとしたときに呼ばれる
- *   closeOnBackdrop?: boolean,    // 背景クリックで閉じるか（入力途中は false にして誤操作を防ぐ）
+ *   title?: React.ReactNode,
+ *   header?: React.ReactNode,
+ *   labelId?: string,
+ *   onClose: () => void,
+ *   busy?: boolean,             // 保存中などは閉じない
+ *   closeOnBackdrop?: boolean,  // 背景を押して閉じるか（入力途中は false にして誤操作を防ぐ）
  *   className?: string,
  *   children: React.ReactNode,
  * }} props
  */
-export default function Modal({ titleId, onRequestClose, closeOnBackdrop = true, className = '', children }) {
+export default function Modal({ title, header, labelId, onClose, busy = false, closeOnBackdrop = true, className = '', children }) {
   const dialogRef = useRef(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = dialogRef.current
-    // 開く前にフォーカスしていた要素を覚えておく
     const previouslyFocused = document.activeElement
     dialog.showModal()
 
-    // 指定された入力欄にカーソルを置く（既存の文字がある場合は文末に）
     const target = dialog.querySelector('[data-autofocus]')
     if (target) {
       target.focus()
-      if (typeof target.setSelectionRange === 'function') {
-        const end = target.value.length
-        target.setSelectionRange(end, end)
-      }
+      target.setSelectionRange?.(target.value.length, target.value.length)
     }
 
     return () => {
       if (dialog.open) dialog.close()
-      // 閉じた後、元の要素にフォーカスを戻す（キーボード操作のため）
-      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
-        previouslyFocused.focus()
-      }
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) previouslyFocused.focus()
     }
   }, [])
 
-  // Esc キー：ブラウザが勝手に閉じないよう止めて、閉じてよいかは親に判断させる
-  function handleCancel(event) {
-    event.preventDefault()
-    onRequestClose()
-  }
-
-  // 背景（ダイアログの外側）をクリックしたら閉じる
-  function handleClick(event) {
-    if (closeOnBackdrop && event.target === dialogRef.current) onRequestClose()
+  function requestClose() {
+    if (!busy) onClose()
   }
 
   return (
     <dialog
       ref={dialogRef}
       className={`modal ${className}`.trim()}
-      aria-labelledby={titleId}
-      onCancel={handleCancel}
-      onClick={handleClick}
+      aria-labelledby={labelId ?? titleId}
+      // Esc：ブラウザに任せず、閉じてよいかをここで判断する
+      onCancel={(event) => {
+        event.preventDefault()
+        requestClose()
+      }}
+      onClick={(event) => {
+        if (closeOnBackdrop && event.target === dialogRef.current) requestClose()
+      }}
     >
-      <div className="modal-body">{children}</div>
+      <div className="modal-body">
+        {header ?? (
+          <div className="modal-header">
+            <h2 id={titleId} className="modal-title">
+              {title}
+            </h2>
+            <CloseButton onClick={requestClose} disabled={busy} />
+          </div>
+        )}
+        {children}
+      </div>
     </dialog>
+  )
+}
+
+export function CloseButton({ onClick, disabled }) {
+  return (
+    <button type="button" className="icon-btn" onClick={onClick} aria-label="閉じる" title="閉じる（Esc）" disabled={disabled}>
+      <CloseIcon size={20} />
+    </button>
   )
 }

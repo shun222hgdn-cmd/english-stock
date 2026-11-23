@@ -23,21 +23,20 @@
 
 | 機能 | 内容 |
 |---|---|
-| ログイン / ログアウト | メールアドレスとパスワードで認証（Supabase Auth） |
-| 英単語・フレーズの登録 | 英語と日本語訳を登録。種類（Word / Phrase）は切り替えで選択、未選択なら英語にスペースがあれば Phrase と自動判定。前後の空白は自動で除去、空欄は登録不可 |
-| 品詞・コメント（任意） | 単語には品詞（名詞・動詞・形容詞など10種類）をタップで選べる。単語・フレーズどちらにも500文字までのコメントを付けられる。一覧と復習（答えを開いたとき）に表示 |
-| フォルダの鍵（任意） | フォルダごとにパスワードをかけられる。鍵付きフォルダは開くときにパスワードが必要（別のフォルダに切り替えるかアプリを閉じるとまた閉じる）。忘れたら管理者パスワードで外せる。※画面での鍵のため、同じアカウントで API を直接使えば中身は読める |
-| CSVで書き出す | ⚙（設定）から、表示中のフォルダの単語・フレーズを CSV でダウンロード（種類・英語・日本語訳・品詞・コメント。Excel で文字化けしない UTF-8 BOM 付き）。バックアップにも使える |
-| ChatGPT連携（停止中） | アプリの設定画面からは外した。ChatGPT で作ったリストは「まとめて追加」で取り込む。サーバー側の受け口（Edge Function `chatgpt`）は残っているが、連携キーが無ければ使えない |
-| まとめて追加 | 単語帳の右上から。ChatGPT などで作ったリスト（`英語 | 日本語訳 | 品詞 | コメント`、表、タブ区切り、このアプリの CSV）を貼り付けて、確認してから一括追加（300件まで。登録済みは除外）。ChatGPT への頼み方はボタンでコピーできる。CSV バックアップからの復元にも使える |
-| 発音 | 単語帳の各行と暗記カードの 🔊 で英語を読み上げ（ブラウザ内蔵の読み上げ機能を使用。外部API・料金なし）。暗記の JP → EN では答えを開いてから聞ける。⚙ でアメリカ英語 / イギリス英語、ふつう / ゆっくりを選べる（端末ごとに保存） |
-| 一覧表示 | Stock 画面で All / Words / Phrases を切り替えて表示。アルファベット順のカード表示、長いフレーズも折り返して全文表示 |
-| 詳細・編集・削除 | 一覧の行を押すと詳細（英語・🔊・日本語訳・品詞・コメント）が開き、右上の「編集」から編集画面へ。削除は編集画面から確認付きで |
-| 検索 | 英語・日本語の部分一致、英語の大文字・小文字は区別しない、入力に合わせて即時反映 |
-| ランダム出題 | 範囲（すべて / 英単語 / フレーズ）と方向（日→英 / 英→日）を選んで出題。直前と同じ問題は連続しない |
-| 登録件数表示 | ホーム画面に英単語・フレーズの件数を表示（実データから計算） |
-| フォルダ | 1つのアカウントを複数人で使い分け。右上でフォルダ（例：しゅん / ソヒ / 母）を切り替えると、全画面がその人のデータだけになる。追加・名前変更・削除（中身ごと）が可能 |
-| データ保存・同期 | Supabase（PostgreSQL）に保存。別の端末でも同じデータを利用可能 |
+| ログイン / ログアウト | ID とパスワードで認証（Supabase Auth）。新規登録画面はなく、アカウントは管理者が作る |
+| フォルダ | 1つのアカウントを複数人で使い分け。右上でフォルダ（例：しゅん / ソヒ）を切り替えると、全画面がそのフォルダのデータだけになる。追加・名前変更・削除（中身ごと） |
+| フォルダの鍵（任意） | フォルダごとにパスワードをかけられる（別のフォルダに切り替えるかアプリを閉じるとまた閉まる）。忘れたら管理者パスワードで外せる。※画面での鍵のため、同じアカウントで API を直接使えば中身は読める |
+| 単語帳 | 単語・フレーズを1画面で管理。すべて / 単語 / フレーズ の切り替え（件数つき）、A〜Z の見出しつきでアルファベット順、検索（英語・日本語の部分一致） |
+| 登録 | 右下の ＋ から。英語・日本語訳、任意で品詞（単語のみ・10種類）とコメント（500文字まで）。種類は英語にスペースがあればフレーズと自動判定。同じ英語が登録済みなら注意を出す |
+| 詳細・編集・削除 | 行を押すと詳細（英語・🔊・日本語訳・品詞・コメント）、右上の「編集」から編集・削除（確認つき） |
+| まとめて追加 | ChatGPT などで作ったリスト（`英語 \| 日本語訳 \| 品詞 \| コメント`、表、タブ区切り、このアプリの CSV）を貼り付け、確認してから一括追加（300件まで。登録済みは除外） |
+| 暗記 | ランダムに出題（直前と同じ問題は続けない）。範囲（すべて / 単語 / フレーズ）と方向（JP → EN / EN → JP）を選べる。答えを出しても問題の位置は動かない |
+| 発音 | 🔊 で英語を読み上げ（ブラウザ内蔵の音声合成。外部 API・料金なし）。⚙ でアメリカ英語 / イギリス英語、ふつう / ゆっくり |
+| CSV で書き出す | ⚙ から、表示中のフォルダを CSV でダウンロード（Excel で文字化けしない UTF-8 BOM 付き）。まとめて追加で復元もできる |
+| パスワード変更 | ⚙ から。管理者パスワードが必要（データベースで確認） |
+| データの保存・同期 | Supabase（PostgreSQL）に保存。どの端末でも同じデータ。アプリに戻ると自動で最新に |
+
+アプリから AI や外部のサービスを呼び出すことはありません。
 
 ## 3. 使用技術
 
@@ -48,7 +47,7 @@
 | スタイル | CSS（フレームワーク不使用） |
 | ビルド | Vite |
 | データベース | Supabase（PostgreSQL） + Row Level Security |
-| 認証 | Supabase Auth（メール + パスワード） |
+| 認証 | Supabase Auth（ID + パスワード） |
 | ホスティング | GitHub Pages |
 | 自動デプロイ | GitHub Actions |
 | テスト | Node.js 標準のテスト機能（`node:test`） |
@@ -67,7 +66,7 @@ GitHub Pages ── HTML / CSS / JavaScript（Viteでビルドした静的ファ
    ▼
 Supabase
    ├─ Supabase Auth ……… ログイン認証
-   ├─ PostgreSQL ………… stocks テーブルにデータ保存
+   ├─ PostgreSQL ………… folders / stocks テーブルにデータ保存
    └─ Row Level Security … 本人のデータだけ読み書きできるよう、DB側で制御
 ```
 
@@ -78,42 +77,49 @@ Supabase
 ```text
 english-stock/
 ├── .github/workflows/deploy.yml   GitHub Pages への自動デプロイ設定
-├── public/favicon.svg             ファビコン
+├── public/                        アイコン・ホーム画面用の設定
 ├── src/
 │   ├── components/                画面の部品
 │   │   ├── Header.jsx             ヘッダー（アプリ名・フォルダ切り替え・設定）
-│   │   ├── SettingsDialog.jsx     設定（パスワード変更・ログアウト）
 │   │   ├── Navigation.jsx         画面下部のタブ（単語帳 / 暗記）
-│   │   ├── StockCard.jsx          一覧の1件分のカード
-│   │   ├── StockDetail.jsx        単語・フレーズの詳細（編集ボタン付き）
-│   │   ├── StockForm.jsx          登録・編集フォーム（モーダル）
-│   │   ├── ConfirmDialog.jsx（廃止：削除の確認は編集画面の中で行う）
-│   │   ├── Modal.jsx              モーダルの共通部品（<dialog> を使用）
+│   │   ├── Modal.jsx              ダイアログの共通部品（<dialog> を使用）
+│   │   ├── Choice.jsx             切り替えボタンの並び（すべて / 単語 / フレーズ など）
+│   │   ├── StockCard.jsx          一覧の1行
+│   │   ├── StockDetail.jsx        詳細（編集ボタン付き）
+│   │   ├── StockForm.jsx          登録・編集フォーム
+│   │   ├── BulkImportDialog.jsx   まとめて追加
+│   │   ├── FolderDialog.jsx       フォルダの切り替え・追加・名前変更・鍵・削除
+│   │   ├── SettingsDialog.jsx     設定（CSV・発音・パスワード変更・ログアウト）
+│   │   ├── PasswordDialog.jsx     パスワード変更（管理者パスワード）
+│   │   ├── QuizCard.jsx           暗記カード
+│   │   ├── SpeakButton.jsx        発音ボタン
+│   │   ├── AutoTextarea.jsx       文字数に合わせて伸びる入力欄
 │   │   ├── SearchBar.jsx          検索欄
-│   │   ├── QuizCard.jsx           問題カード
 │   │   ├── SetupNotice.jsx        接続情報が未設定のときの案内
-│   │   └── Icons.jsx              SVGアイコン
+│   │   └── Icons.jsx              SVG アイコン
 │   ├── pages/                     画面
-│   │   ├── Login.jsx              ログイン画面
-│   │   ├── StockPage.jsx          Stock画面（英単語・フレーズの一覧・登録）
-│   │   ├── FolderSetup.jsx        最初のフォルダ作成画面
-│   │   └── Quiz.jsx               ランダム出題画面
+│   │   ├── Login.jsx              ログイン
+│   │   ├── StockPage.jsx          単語帳
+│   │   ├── Quiz.jsx               暗記
+│   │   ├── FolderSetup.jsx        最初のフォルダ作成
+│   │   └── LockedFolder.jsx       鍵付きフォルダを開く
 │   ├── hooks/
-│   │   ├── useAuth.js             ログイン状態の管理
-│   │   └── useStocks.js           登録データの管理
-│   ├── services/stockService.js   Supabase との通信（単語・フレーズ）
-│   ├── services/folderService.js  Supabase との通信（フォルダ）
-│   ├── lib/supabase.js            Supabase クライアントの作成
-│   ├── utils/
-│   │   ├── quiz.js                出題ロジック（絞り込み・ランダム抽出）
-│   │   ├── search.js              検索・並び替え
-│   │   ├── validation.js          入力チェック
+│   │   ├── useAuth.js             ログイン状態
+│   │   ├── useData.js             単語・フレーズとフォルダ（読み込み・変更・裏での再読み込み）
+│   │   └── useBusy.js             送信中の二重実行防止とエラー表示
+│   ├── services/api.js            Supabase との通信（すべて）
+│   ├── lib/
+│   │   ├── supabase.js            Supabase クライアント
+│   │   └── preferences.js         端末ごとの設定（localStorage）
+│   ├── utils/                     画面に依存しない処理（自動テストあり）
+│   │   ├── quiz.js / search.js / validation.js / folders.js / folderLock.js
+│   │   ├── loginId.js / csv.js / bulkImport.js / speech.js
 │   │   └── errors.js              エラーメッセージの日本語化
 │   ├── App.jsx                    画面の切り替え・全体の構成
 │   ├── main.jsx                   エントリーポイント
-│   └── index.css                  共通スタイル
-├── supabase/schema.sql            テーブル作成・RLS設定のSQL（新規構築用・最新版）
-├── supabase/migrations/002_add_folders.sql  旧版からフォルダ機能を追加するSQL
+│   └── index.css                  スタイル
+├── supabase/schema.sql            データベースのすべて（テーブル・RLS・管理者パスワード）
+├── supabase/migrations/           既存のデータベースを最新にするSQL
 ├── tests/                         自動テスト
 ├── .env.example                   環境変数のひな形
 ├── index.html
@@ -160,7 +166,7 @@ npm install
 
 1. 左メニューの **SQL Editor** を開く
 2. **New query** を押す
-3. このリポジトリの `supabase/schema.sql` の内容をすべて貼り付ける（folders・stocks の2つのテーブルが作られる）
+3. このリポジトリの `supabase/schema.sql` の内容をすべて貼り付ける（テーブル・RLS・管理者パスワードの仕組みがまとめて作られる）
 4. **Run** を押し、`Success. No rows returned` と表示されれば完了
 5. 左メニュー **Table Editor** に `stocks` テーブルがあり、**RLS enabled** になっていることを確認する
 
@@ -196,7 +202,6 @@ npm install
 2. 次の2つを控える
    - **Project URL**（`https://xxxxxxxx.supabase.co`）
    - **Publishable key**（`sb_publishable_...` で始まる値）
-     - 古いプロジェクトで Publishable key が無い場合は **anon public** key でも動作します
 
 > **service_role key / secret key（`sb_secret_...`）は絶対に使わないでください。** RLS を無視して全データを操作できてしまう鍵です。
 
@@ -216,8 +221,6 @@ npm install
    VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxx
    ```
-
-   旧 anon key を使う場合は `VITE_SUPABASE_ANON_KEY=...` でも動作します。
 
 `.env.local` は `.gitignore` に含まれているため、Git には登録されません。
 
@@ -242,9 +245,13 @@ npm test
 
 Node.js 標準のテスト機能で、次の処理を自動テストしています（追加のテストライブラリは不要）。
 
-- `tests/quiz.test.js`：カテゴリーでの絞り込み、出題方向、ランダム抽出（直前と同じ問題が連続しない／1件・0件の場合）
-- `tests/search.test.js`：英語・日本語の部分一致検索、大文字・小文字の無視、並び順、入力チェック（空欄・空白のみ）、重複チェック
+- `tests/quiz.test.js`：出題範囲の絞り込み、出題方向、ランダム抽出（直前と同じ問題が続かない／1件・0件）
+- `tests/search.test.js`：検索・並び順・頭文字の見出し、入力チェック、重複チェック
 - `tests/folders.test.js`：フォルダごとの絞り込み、表示フォルダの選び方、フォルダ名のチェック
+- `tests/folderLock.test.js`：鍵のパスワードのハッシュと照合
+- `tests/loginId.test.js`：ID とアドレスの変換
+- `tests/csv.test.js` / `tests/bulkImport.test.js`：CSV の書き出し、貼り付けたリストの読み取り
+- `tests/speech.test.js`：発音の声の選び方
 
 本番ビルドの確認：
 
@@ -303,43 +310,22 @@ https://<GitHubユーザー名>.github.io/english-stock/
 
 変数を後から設定した場合は、**Actions** → **Deploy to GitHub Pages** → **Run workflow** で再実行できます。
 
-### 11.5（任意）Supabase の Site URL を設定する
+### 11.5 既存のデータベースを最新にする
 
-**Authentication** → **URL Configuration** の **Site URL** に公開URLを設定しておくと、パスワードリセットメールなどのリンク先が正しくなります。
+以前の版で作ったデータベースは、`supabase/migrations/` の SQL を SQL Editor で番号順に1回ずつ実行すると最新になります（データは消えません）。新しく作る場合は `schema.sql` だけでよく、これは不要です。
 
-### 11.6 フォルダ機能より前の版から更新する場合
+### 11.6 管理者パスワード
 
-すでにフォルダ機能の無い版で運用している場合は、**新しいアプリを公開する前に** SQL Editor で `supabase/migrations/002_add_folders.sql` を1回だけ実行してください。
-
-- 既存の単語・フレーズは消えません。アカウントごとに「My Folder」が作られ、その中に移ります（名前はアプリから変更可能）。
-- 実行後に `main` へ push すると、フォルダ対応版が公開されます。
-
-### 11.7 パスワード変更を管理者パスワードで保護する
-
-`supabase/migrations/003_admin_password_lock.sql` を SQL Editor で1回実行すると、ログイン用パスワードの変更に**管理者パスワード**が必要になります。
-
-- アプリ右上の鍵アイコン → 初回だけ「管理者パスワード」を設定 → 以後は管理者パスワードを入れたときだけ変更できる
+- ⚙ → パスワード変更 で、初回だけ管理者パスワードを決める。以後、ログイン用パスワードの変更と、忘れたフォルダの鍵の解除に使う
 - アプリを通さない変更（API の直接呼び出し・パスワード再設定メール・Supabase 管理画面からの変更）はデータベースが拒否する
-- 管理者パスワードは bcrypt で暗号化し、API から見えない `private` スキーマに保存
-- 管理者パスワードを5回間違えると15分間ロック
-- **管理者パスワードを忘れたら**：SQL Editor で `delete from private.admin_settings;` を実行すると未設定に戻り、アプリから設定し直せる
+- bcrypt で暗号化し、API から見えない `private` スキーマに保存。5回間違えると15分間ロック
+- **忘れたら**：SQL Editor で `delete from private.admin_settings;` を実行すると未設定に戻り、アプリから設定し直せる
 - **Supabase 管理画面からパスワードを変えたいとき**：一時的に `alter table auth.users disable trigger block_password_change;` → 変更 → `alter table auth.users enable trigger block_password_change;`
-
-### 11.8 ChatGPT 連携（任意）
-
-1. SQL Editor で `supabase/migrations/006_chatgpt_token.sql` を実行
-2. Edge Functions → Deploy a new function → Via Editor で、`supabase/functions/chatgpt/index.js`（エディタの index.ts に貼る）と `logic.js` を登録し、名前を `chatgpt` にしてデプロイ
-3. 関数の Settings で **Verify JWT を OFF** にして保存（連携キーは Supabase のログイン用トークンではないため）
-4. アプリを公開すると、GPT 用の API の説明書が `https://<ユーザー名>.github.io/english-stock/chatgpt-openapi.json` で公開される（`public/chatgpt-openapi.json`。server の URL は自分の Supabase に合わせる）
-5. GPT の作り方は `chatgpt/GPT_SETUP.md`
-
-- ChatGPT からできるのは「フォルダ一覧を見る」「単語・フレーズを追加（1回50件まで）」だけ。削除・編集・鍵付きフォルダへの追加はできない
-- 連携キーはハッシュだけを保存。漏れたら ⚙ → ChatGPT連携 → 連携をやめる で即無効化できる
 
 ## 12. セキュリティ上の注意事項
 
-- **アクセス制御はデータベース側（RLS）で行っています。** `stocks` テーブルの RLS を無効にしないでください。
-- 未ログイン（anon）からは `stocks` テーブルに一切アクセスできません。ログイン済みユーザーも、自分の `user_id` のデータしか取得・登録・更新・削除できません。
+- **アクセス制御はデータベース側（RLS）で行っています。** `folders`・`stocks` テーブルの RLS を無効にしないでください。
+- 未ログイン（anon）からは `folders`・`stocks` テーブルに一切アクセスできません。ログイン済みユーザーも、自分の `user_id` のデータしか取得・登録・更新・削除できません。
 - `VITE_` で始まる環境変数はビルド後のJavaScriptに含まれ、誰でも見られます。Publishable key は公開前提の鍵ですが、**service_role key / secret key / データベースのパスワードは絶対にフロントエンドやGitHubに含めないでください。**
 - `.env.local` などの環境変数ファイルはコミットしないでください（`.gitignore` 済み）。
 - 新規ユーザー登録は Supabase 側で必ず無効にしてください（7.4）。
@@ -362,4 +348,4 @@ fetch('https://<Project URL>/rest/v1/stocks?select=*', {
 
 ## 13. 今回実装していない機能
 
-苦手単語の記録、音声読み上げ、AIによる例文生成・翻訳、学習履歴、正答率、忘却曲線に基づく出題、タグ、SNS、通知、ゲーミフィケーション、課金、一般ユーザー向け新規登録、登録日時・更新日時の記録。
+苦手単語の記録、AIによる例文生成・翻訳、学習履歴、正答率、忘却曲線に基づく出題、タグ、SNS、通知、ゲーミフィケーション、課金、一般ユーザー向け新規登録、登録日時・更新日時の記録。

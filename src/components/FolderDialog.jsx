@@ -1,25 +1,24 @@
-import { useId, useRef, useState } from 'react'
+import { useState } from 'react'
 import Modal from './Modal'
-import { CheckIcon, CloseIcon, FolderIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
+import { CheckIcon, FolderIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
 import { cleanFolderName } from '../utils/folders'
 import { FOLDER_LOCK_MIN_LENGTH, validateFolderLock } from '../utils/folderLock'
-import { toErrorMessage } from '../utils/errors'
+import { useBusy } from '../hooks/useBusy'
 
 /**
- * フォルダの切り替え・追加・名前変更・削除を行うダイアログ。
- * 1つのアカウントを複数人で使うとき、ここで「誰のフォルダを見るか」を選ぶ。
+ * フォルダの切り替え・追加・名前変更・鍵・削除（1つのアカウントを複数人で使うとき、ここで誰のフォルダを見るか選ぶ）。
  *
  * @param {{
- *   folders: Array<{ id: string, name: string }>,
+ *   folders: Array<{ id: string, name: string, lock_hash: string | null }>,
  *   currentId: string,
  *   counts: Record<string, number>,          // フォルダごとの登録件数
  *   onSelect: (id: string) => void,
  *   onAdd: (name: string) => Promise<{ id: string }>,
  *   onRename: (id: string, name: string) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
- *   isFolderOpen: (folder: object) => boolean,                 // 鍵がない、または開いているフォルダか
- *   onLock: (id: string, password: string) => Promise<void>,   // 鍵をかける
- *   onRemoveLock: (id: string, password: string) => Promise<boolean>, // 鍵を外す（パスワードが違えば false）
+ *   isFolderOpen: (folder: object) => boolean,                        // 鍵がない、または開いているフォルダか
+ *   onLock: (id: string, password: string) => Promise<void>,
+ *   onRemoveLock: (id: string, password: string) => Promise<boolean>, // パスワードが違えば false
  *   onClose: () => void,
  * }} props
  */
@@ -36,37 +35,17 @@ export default function FolderDialog({
   onRemoveLock,
   onClose,
 }) {
-  const id = useId()
-  // 行ごとの操作モード（null: 通常 / { type: 'rename' | 'delete' | 'lock', id }）
+  // 行ごとの操作（null: 通常 / { type: 'rename' | 'delete' | 'lock', id }）
   const [rowMode, setRowMode] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const busyRef = useRef(false)
-  const [error, setError] = useState('')
-
+  const { busy, error, run } = useBusy('保存に失敗しました。')
   const [newName, setNewName] = useState('')
   const [newNameError, setNewNameError] = useState('')
+  const locked = Boolean(rowMode) || busy
 
-  /** 通信を伴う操作をまとめて実行（二重送信防止とエラー表示） */
-  async function run(action) {
-    if (busyRef.current) return false
-    busyRef.current = true
-    setBusy(true)
-    setError('')
-    try {
-      await action()
-      return true
-    } catch (err) {
-      setError(toErrorMessage(err, '保存に失敗しました。'))
-      return false
-    } finally {
-      busyRef.current = false
-      setBusy(false)
-    }
-  }
+  /** 通信して、成功したら行の操作を終える */
+  const runRow = async (action) => (await run(action)) && setRowMode(null)
 
-  // フォルダを選ぶ → 切り替えて閉じる
-  function handleSelect(folderId) {
-    if (rowMode) return
+  function selectAndClose(folderId) {
     onSelect(folderId)
     onClose()
   }
@@ -78,160 +57,121 @@ export default function FolderDialog({
     setNewNameError(nameError)
     if (nameError) return
     let created
-    const ok = await run(async () => {
-      created = await onAdd(value)
-    })
-    if (ok && created) {
-      onSelect(created.id)
-      onClose()
+    if (await run(async () => (created = await onAdd(value)))) selectAndClose(created.id)
+  }
+
+  function renderRow(folder) {
+    const isCurrent = folder.id === currentId
+    const count = counts[folder.id] ?? 0
+    const isLocked = Boolean(folder.lock_hash)
+    const isOpen = isFolderOpen(folder) // 閉じている鍵付きフォルダは、件数・名前変更・削除を出さない
+    const mode = rowMode?.id === folder.id ? rowMode.type : null
+    const cancel = () => setRowMode(null)
+
+    if (mode === 'lock') {
+      return (
+        <LockForm
+          folder={folder}
+          busy={busy}
+          onSetLock={(password) => runRow(() => onLock(folder.id, password))}
+          onRemoveLock={async (password) => {
+            let removed = false
+            const ok = await run(async () => (removed = await onRemoveLock(folder.id, password)))
+            if (ok && removed) cancel()
+            return ok ? removed : true // 通信エラーは上にエラーを出すので、ここでは「違う」とは言わない
+          }}
+          onCancel={cancel}
+        />
+      )
     }
-  }
+    if (mode === 'rename') {
+      return (
+        <RenameForm folder={folder} folders={folders} busy={busy} onSave={(name) => runRow(() => onRename(folder.id, name))} onCancel={cancel} />
+      )
+    }
+    if (mode === 'delete') {
+      return (
+        <>
+          <p className="folder-delete-text">
+            「{folder.name}」と中の {count} 件を削除します。元に戻せません。
+          </p>
+          <div className="folder-row-actions">
+            <button type="button" className="btn btn-secondary btn-small" onClick={cancel} disabled={busy}>
+              キャンセル
+            </button>
+            <button type="button" className="btn btn-danger btn-small" onClick={() => runRow(() => onDelete(folder.id))} disabled={busy}>
+              {busy ? '削除中…' : '削除'}
+            </button>
+          </div>
+        </>
+      )
+    }
 
-  async function handleDelete(folderId) {
-    const ok = await run(() => onDelete(folderId))
-    if (ok) setRowMode(null)
-  }
-
-  function requestClose() {
-    if (!busyRef.current) onClose()
+    return (
+      <>
+        <button
+          type="button"
+          className="folder-select"
+          onClick={() => selectAndClose(folder.id)}
+          aria-current={isCurrent ? 'true' : undefined}
+          disabled={locked}
+        >
+          <FolderIcon size={20} />
+          <span className="folder-select-name">{folder.name}</span>
+          {isOpen ? (
+            <span className="folder-select-count">{count}件</span>
+          ) : (
+            <span className="folder-select-count" aria-label="鍵がかかっています">
+              <LockIcon size={15} />
+            </span>
+          )}
+          {isCurrent && <CheckIcon size={18} />}
+        </button>
+        <button
+          type="button"
+          className={`icon-btn${isLocked ? ' is-locked' : ''}`}
+          onClick={() => setRowMode({ type: 'lock', id: folder.id })}
+          aria-label={isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
+          title={isLocked ? '鍵を外す' : '鍵をかける'}
+          disabled={locked}
+        >
+          {isLocked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
+        </button>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => setRowMode({ type: 'rename', id: folder.id })}
+          aria-label={`「${folder.name}」の名前を変更`}
+          title={isOpen ? '名前を変更' : '鍵を開けると変更できます'}
+          disabled={locked || !isOpen}
+        >
+          <PencilIcon size={18} />
+        </button>
+        <button
+          type="button"
+          className="icon-btn icon-btn-danger"
+          onClick={() => setRowMode({ type: 'delete', id: folder.id })}
+          aria-label={`「${folder.name}」を削除`}
+          title={folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'}
+          disabled={locked || folders.length <= 1 || !isOpen}
+        >
+          <TrashIcon size={18} />
+        </button>
+      </>
+    )
   }
 
   return (
-    <Modal titleId={`${id}-title`} onRequestClose={requestClose} closeOnBackdrop={!rowMode && !newName.trim()}>
-      <div className="modal-header">
-        <h2 id={`${id}-title`} className="modal-title">
-          フォルダ
-        </h2>
-        <button type="button" className="icon-btn" onClick={requestClose} aria-label="閉じる" disabled={busy}>
-          <CloseIcon size={20} />
-        </button>
-      </div>
+    <Modal title="フォルダ" onClose={onClose} busy={busy} closeOnBackdrop={!rowMode && !newName.trim()}>
       <p className="muted folder-lead">使う人ごとにフォルダを分けられます。</p>
 
       <ul className="folder-list">
         {folders.map((folder) => {
-          const isCurrent = folder.id === currentId
-          const count = counts[folder.id] ?? 0
-          const isLocked = Boolean(folder.lock_hash)
-          // 鍵がかかって閉じているフォルダは、件数・名前変更・削除を出さない
-          const isOpen = isFolderOpen(folder)
-
-          if (rowMode?.id === folder.id && rowMode.type === 'lock') {
-            return (
-              <li key={folder.id} className="folder-row">
-                <LockForm
-                  folder={folder}
-                  busy={busy}
-                  onSetLock={(password) => run(() => onLock(folder.id, password)).then((ok) => ok && setRowMode(null))}
-                  onRemoveLock={async (password) => {
-                    let removed = false
-                    const ok = await run(async () => {
-                      removed = await onRemoveLock(folder.id, password)
-                    })
-                    if (ok && removed) setRowMode(null)
-                    // 通信エラーのときは上にエラーを出すので、ここでは「違う」とは言わない
-                    return ok ? removed : true
-                  }}
-                  onCancel={() => setRowMode(null)}
-                />
-              </li>
-            )
-          }
-
-          if (rowMode?.id === folder.id && rowMode.type === 'rename') {
-            return (
-              <li key={folder.id} className="folder-row">
-                <RenameForm
-                  folder={folder}
-                  folders={folders}
-                  busy={busy}
-                  onSave={(name) => run(() => onRename(folder.id, name)).then((ok) => ok && setRowMode(null))}
-                  onCancel={() => setRowMode(null)}
-                />
-              </li>
-            )
-          }
-
-          if (rowMode?.id === folder.id && rowMode.type === 'delete') {
-            return (
-              <li key={folder.id} className="folder-row folder-row-danger">
-                <p className="folder-delete-text">
-                  「{folder.name}」と中の {count} 件を削除します。元に戻せません。
-                </p>
-                <div className="folder-row-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-small"
-                    onClick={() => setRowMode(null)}
-                    disabled={busy}
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-small"
-                    onClick={() => handleDelete(folder.id)}
-                    disabled={busy}
-                  >
-                    {busy ? '削除中…' : '削除'}
-                  </button>
-                </div>
-              </li>
-            )
-          }
-
+          const mode = rowMode?.id === folder.id ? rowMode.type : null
+          const className = mode === 'delete' ? ' folder-row-danger' : !mode && folder.id === currentId ? ' is-current' : ''
           return (
-            <li key={folder.id} className={`folder-row${isCurrent ? ' is-current' : ''}`}>
-              <button
-                type="button"
-                className="folder-select"
-                onClick={() => handleSelect(folder.id)}
-                aria-current={isCurrent ? 'true' : undefined}
-                disabled={Boolean(rowMode) || busy}
-              >
-                <FolderIcon size={20} />
-                <span className="folder-select-name">{folder.name}</span>
-                {isOpen ? (
-                  <span className="folder-select-count">{count}件</span>
-                ) : (
-                  <span className="folder-select-count" aria-label="鍵がかかっています">
-                    <LockIcon size={15} />
-                  </span>
-                )}
-                {isCurrent && <CheckIcon size={18} />}
-              </button>
-              <button
-                type="button"
-                className={`icon-btn${isLocked ? ' is-locked' : ''}`}
-                onClick={() => setRowMode({ type: 'lock', id: folder.id })}
-                aria-label={isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
-                title={isLocked ? '鍵を外す' : '鍵をかける'}
-                disabled={Boolean(rowMode) || busy}
-              >
-                {isLocked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
-              </button>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => setRowMode({ type: 'rename', id: folder.id })}
-                aria-label={`「${folder.name}」の名前を変更`}
-                title={isOpen ? '名前を変更' : '鍵を開けると変更できます'}
-                disabled={Boolean(rowMode) || busy || !isOpen}
-              >
-                <PencilIcon size={18} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn icon-btn-danger"
-                onClick={() => setRowMode({ type: 'delete', id: folder.id })}
-                aria-label={`「${folder.name}」を削除`}
-                title={
-                  folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'
-                }
-                disabled={Boolean(rowMode) || busy || folders.length <= 1 || !isOpen}
-              >
-                <TrashIcon size={18} />
-              </button>
+            <li key={folder.id} className={`folder-row${className}`}>
+              {renderRow(folder)}
             </li>
           )
         })}
@@ -245,24 +185,21 @@ export default function FolderDialog({
 
       {/* 新しいフォルダの追加 */}
       <form className="folder-add" onSubmit={handleAdd} noValidate>
-        <label htmlFor={`${id}-new`} className="visually-hidden">
-          新しいフォルダ名
-        </label>
         <input
-          id={`${id}-new`}
           className="input"
           value={newName}
           onChange={(e) => {
             setNewName(e.target.value)
-            if (newNameError) setNewNameError('')
+            setNewNameError('')
           }}
+          aria-label="新しいフォルダ名"
           placeholder="新しいフォルダ名（例：ソヒ）"
           autoComplete="off"
           enterKeyHint="done"
           aria-invalid={Boolean(newNameError)}
-          disabled={busy || Boolean(rowMode)}
+          disabled={locked}
         />
-        <button type="submit" className="btn btn-primary" disabled={busy || Boolean(rowMode)}>
+        <button type="submit" className="btn btn-primary" disabled={locked}>
           <PlusIcon size={18} />
           <span>追加</span>
         </button>
@@ -272,31 +209,46 @@ export default function FolderDialog({
   )
 }
 
-/** フォルダ名の変更フォーム（一覧の行の中に表示する） */
+/** 行の中の小さなフォーム（名前変更・鍵）の共通の枠：入力欄、キャンセル・決定ボタン、エラー */
+function RowForm({ onSubmit, busy, submitLabel, onCancel, error, children }) {
+  return (
+    <form className="folder-rename" onSubmit={onSubmit} noValidate>
+      {children}
+      <div className="folder-row-actions">
+        <button type="button" className="btn btn-secondary btn-small" onClick={onCancel} disabled={busy}>
+          キャンセル
+        </button>
+        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
+          {submitLabel}
+        </button>
+      </div>
+      {error && <p className="field-error">{error}</p>}
+    </form>
+  )
+}
+
+/** フォルダ名の変更 */
 function RenameForm({ folder, folders, busy, onSave, onCancel }) {
   const [name, setName] = useState(folder.name)
-  const [nameError, setNameError] = useState('')
+  const [error, setError] = useState('')
 
   function handleSubmit(event) {
     event.preventDefault()
-    const { value, error } = cleanFolderName(name, folders, folder.id)
-    setNameError(error)
-    if (error) return
-    if (value === folder.name) {
-      onCancel() // 変更なし
-      return
-    }
-    onSave(value)
+    const result = cleanFolderName(name, folders, folder.id)
+    setError(result.error)
+    if (result.error) return
+    if (result.value === folder.name) onCancel() // 変更なし
+    else onSave(result.value)
   }
 
   return (
-    <form className="folder-rename" onSubmit={handleSubmit} noValidate>
+    <RowForm onSubmit={handleSubmit} busy={busy} submitLabel="保存" onCancel={onCancel} error={error}>
       <input
         className="input"
         value={name}
         onChange={(e) => {
           setName(e.target.value)
-          if (nameError) setNameError('')
+          setError('')
         }}
         onKeyDown={(e) => {
           // Esc は名前変更だけを取り消す（ダイアログ全体は閉じない）
@@ -307,29 +259,19 @@ function RenameForm({ folder, folders, busy, onSave, onCancel }) {
           }
         }}
         aria-label="フォルダ名"
-        aria-invalid={Boolean(nameError)}
+        aria-invalid={Boolean(error)}
         autoComplete="off"
         enterKeyHint="done"
         autoFocus
         disabled={busy}
       />
-      <div className="folder-row-actions">
-        <button type="button" className="btn btn-secondary btn-small" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </button>
-        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
-          保存
-        </button>
-      </div>
-      {nameError && <p className="field-error">{nameError}</p>}
-    </form>
+    </RowForm>
   )
 }
 
 /**
- * 鍵の設定・解除フォーム（一覧の行の中に表示する）。
- * 鍵がないフォルダ：新しいパスワードを2回入れて鍵をかける。
- * 鍵があるフォルダ：今のパスワードを入れて鍵を外す（忘れた場合は、フォルダを開く画面から管理者パスワードで外せる）。
+ * 鍵の設定・解除。鍵がないフォルダは新しいパスワードを2回入れて鍵をかけ、
+ * 鍵があるフォルダは今のパスワードで外す（忘れたら、フォルダを開く画面から管理者パスワードで外せる）。
  */
 function LockForm({ folder, busy, onSetLock, onRemoveLock, onCancel }) {
   const isLocked = Boolean(folder.lock_hash)
@@ -340,12 +282,8 @@ function LockForm({ folder, busy, onSetLock, onRemoveLock, onCancel }) {
   async function handleSubmit(event) {
     event.preventDefault()
     if (isLocked) {
-      if (!password) {
-        setError('今のパスワードを入力してください。')
-        return
-      }
-      const removed = await onRemoveLock(password)
-      if (!removed) {
+      if (!password) return setError('今のパスワードを入力してください。')
+      if (!(await onRemoveLock(password))) {
         setError('パスワードが違います。')
         setPassword('')
       }
@@ -356,50 +294,35 @@ function LockForm({ folder, busy, onSetLock, onRemoveLock, onCancel }) {
     if (!message) onSetLock(password)
   }
 
+  const input = (value, setValue, props) => (
+    <input
+      className="input"
+      type="password"
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value)
+        setError('')
+      }}
+      autoComplete="off"
+      disabled={busy}
+      {...props}
+    />
+  )
+
   return (
-    <form className="folder-rename" onSubmit={handleSubmit} noValidate>
-      <p className="folder-lock-title">
-        {isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
-      </p>
-      <input
-        className="input"
-        type="password"
-        value={password}
-        onChange={(e) => {
-          setPassword(e.target.value)
-          if (error) setError('')
-        }}
-        placeholder={isLocked ? '今のパスワード' : `パスワード（${FOLDER_LOCK_MIN_LENGTH}文字以上）`}
-        aria-label={isLocked ? '今のパスワード' : '鍵のパスワード'}
-        autoComplete="off"
-        autoFocus
-        disabled={busy}
-      />
+    <RowForm onSubmit={handleSubmit} busy={busy} submitLabel={isLocked ? '鍵を外す' : '鍵をかける'} onCancel={onCancel} error={error}>
+      <p className="folder-lock-title">{isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}</p>
+      {input(password, setPassword, {
+        placeholder: isLocked ? '今のパスワード' : `パスワード（${FOLDER_LOCK_MIN_LENGTH}文字以上）`,
+        'aria-label': isLocked ? '今のパスワード' : '鍵のパスワード',
+        autoFocus: true,
+      })}
       {!isLocked && (
-        <input
-          className="input"
-          type="password"
-          value={confirmation}
-          onChange={(e) => {
-            setConfirmation(e.target.value)
-            if (error) setError('')
-          }}
-          placeholder="確認のため、もう一度"
-          aria-label="確認用のパスワード"
-          autoComplete="off"
-          disabled={busy}
-        />
+        <>
+          {input(confirmation, setConfirmation, { placeholder: '確認のため、もう一度', 'aria-label': '確認用のパスワード' })}
+          <p className="muted folder-lock-note">鍵付きのフォルダは、開くときにパスワードが必要になります。</p>
+        </>
       )}
-      {!isLocked && <p className="muted folder-lock-note">鍵付きのフォルダは、開くときにパスワードが必要になります。</p>}
-      <div className="folder-row-actions">
-        <button type="button" className="btn btn-secondary btn-small" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </button>
-        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
-          {isLocked ? '鍵を外す' : '鍵をかける'}
-        </button>
-      </div>
-      {error && <p className="field-error">{error}</p>}
-    </form>
+    </RowForm>
   )
 }
