@@ -122,7 +122,6 @@ export default function Quiz({ stocks }) {
                 ? ['単語', currentQuestion.part_of_speech].filter(Boolean).join('・')
                 : 'フレーズ'
             }
-            note={currentQuestion.note}
             onToggle={() => setShowAnswer((value) => !value)}
           />
           <div className="quiz-actions">
@@ -138,6 +137,13 @@ export default function Quiz({ stocks }) {
               次の問題
             </button>
           </div>
+          {/* コメント：答えを開いているときだけ、ボタンの下の空いているところに出す（上の位置は動かない） */}
+          {showAnswer && currentQuestion.note && (
+            <section className="quiz-comment" aria-label="コメント">
+              <p className="quiz-comment-label">コメント</p>
+              <p className="quiz-comment-text">{currentQuestion.note}</p>
+            </section>
+          )}
           {candidates.length === 1 && (
             <p className="muted center-text">登録が1件のため、同じ問題を出題しています。</p>
           )}

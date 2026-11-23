@@ -865,17 +865,15 @@ code {
   font-weight: 600;
 }
 
-/* 単語カード：紙のカードを1枚置いたような見た目。押すと答えが出る */
+/* 単語カード：紙のカードを1枚置いたような見た目。押すと答えが出る。
+   問題の欄・答えの欄の高さを固定して、答えを出しても問題やボタンの位置が動かないようにする */
 .quiz-card {
   position: relative;
   width: 100%;
-  min-height: 260px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 40px 20px 32px;
+  align-items: stretch;
+  padding: 40px 20px 18px;
   /* 罫線（青い横線）と、上の赤い線で「単語カード」らしく */
   background-color: var(--sheet);
   background-image: linear-gradient(to bottom, transparent 46px, var(--card-red) 46px, var(--card-red) 47px, transparent 47px),
@@ -897,6 +895,15 @@ code {
   font-size: 0.75rem;
 }
 
+/* 問題の欄：高さ固定。問題はこの中で上下中央 */
+.quiz-q-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: 8px 0 16px;
+}
+
 .quiz-question {
   font-size: clamp(1.45rem, 6vw, 1.9rem);
   line-height: 1.35;
@@ -906,29 +913,54 @@ code {
   font-weight: 600;
 }
 
-.quiz-answer-area {
-  width: 100%;
+/* 答えの欄：高さ固定。上に点線と小さな「答え」の見出し */
+.quiz-a-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 112px;
+  padding: 22px 0 8px;
+  border-top: 1px dashed var(--rule-strong);
 }
 
-.quiz-answer,
-.quiz-note {
-  display: block;
-}
-
-/* 答えを開いたときのコメント */
-.quiz-note {
-  margin-top: 10px;
-  color: var(--ink-soft);
-  font-size: 0.88rem;
-  white-space: pre-wrap;
+.quiz-a-label {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
 }
 
 .quiz-answer {
-  margin-top: 8px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--rule-strong);
   color: var(--pen);
-  font-size: clamp(1.15rem, 5vw, 1.4rem);
+  font-size: clamp(1.2rem, 5vw, 1.45rem);
+  line-height: 1.4;
+}
+
+/* コメント：ボタンの下の空いているところに、答えを開いているときだけ出す */
+.quiz-comment {
+  padding: 12px 14px;
+  border-left: 3px solid var(--pen);
+  background-color: var(--pen-soft);
+  border-radius: 0 4px 4px 0;
+}
+
+.quiz-comment-label {
+  margin-bottom: 4px;
+  color: var(--pen);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.quiz-comment-text {
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .quiz-actions {
