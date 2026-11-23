@@ -5,7 +5,7 @@ import { ChevronRightIcon } from './Icons'
  * 長いフレーズも省略せず折り返して表示する。
  *
  * @param {{
- *   stock: { category: string, english: string, japanese: string },
+ *   stock: { category: string, english: string, japanese: string, part_of_speech?: string, note?: string },
  *   showCategory?: boolean,   // true のとき 単語 / フレーズ を小さく表示（「すべて」表示用）
  *   onEdit: () => void,
  * }} props
@@ -20,10 +20,13 @@ export default function StockCard({ stock, showCategory = false, onEdit }) {
           </span>
           <span className="stock-japanese" lang="ja">
             {stock.japanese}
+            {/* 品詞（設定されていれば）と、「すべて」表示のときの種類 */}
+            {stock.part_of_speech && <span className="stock-category">{stock.part_of_speech}</span>}
             {showCategory && (
               <span className="stock-category">{stock.category === 'word' ? '単語' : 'フレーズ'}</span>
             )}
           </span>
+          {stock.note && <span className="stock-note">{stock.note}</span>}
         </span>
         <ChevronRightIcon size={18} className="stock-row-arrow" />
       </button>

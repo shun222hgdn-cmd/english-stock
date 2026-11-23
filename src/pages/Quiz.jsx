@@ -114,7 +114,12 @@ export default function Quiz({ stocks }) {
             questionLang={isJaToEn ? 'ja' : 'en'}
             answerLang={isJaToEn ? 'en' : 'ja'}
             showAnswer={showAnswer}
-            categoryLabel={currentQuestion.category === 'word' ? '単語' : 'フレーズ'}
+            categoryLabel={
+              currentQuestion.category === 'word'
+                ? ['単語', currentQuestion.part_of_speech].filter(Boolean).join('・')
+                : 'フレーズ'
+            }
+            note={currentQuestion.note}
             onToggle={() => setShowAnswer((value) => !value)}
           />
           <div className="quiz-actions">

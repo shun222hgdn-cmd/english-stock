@@ -8,11 +8,21 @@
  *   questionLang: string,    // 問題文の言語（読み上げ・書体用）
  *   answerLang: string,
  *   showAnswer: boolean,
- *   categoryLabel: string,   // 単語 / フレーズ
+ *   categoryLabel: string,   // 単語 / フレーズ（品詞があれば「単語・形容詞」のように）
+ *   note?: string | null,    // コメント（答えを開いたときに表示）
  *   onToggle: () => void,    // カードを押したとき
  * }} props
  */
-export default function QuizCard({ question, answer, questionLang, answerLang, showAnswer, categoryLabel, onToggle }) {
+export default function QuizCard({
+  question,
+  answer,
+  questionLang,
+  answerLang,
+  showAnswer,
+  categoryLabel,
+  note,
+  onToggle,
+}) {
   return (
     <button
       type="button"
@@ -29,9 +39,12 @@ export default function QuizCard({ question, answer, questionLang, answerLang, s
       {/* aria-live で、解答が表示されたことをスクリーンリーダーにも伝える */}
       <span className="quiz-answer-area" aria-live="polite">
         {showAnswer ? (
-          <span className="quiz-answer" lang={answerLang}>
-            {answer}
-          </span>
+          <>
+            <span className="quiz-answer" lang={answerLang}>
+              {answer}
+            </span>
+            {note && <span className="quiz-note">{note}</span>}
+          </>
         ) : (
           <span className="quiz-tap-hint">タップで答え</span>
         )}

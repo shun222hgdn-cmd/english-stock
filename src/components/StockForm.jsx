@@ -2,7 +2,14 @@ import { useId, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import AutoTextarea from './AutoTextarea'
 import { CheckIcon, CloseIcon } from './Icons'
-import { cleanStockInput, findDuplicate, guessCategory } from '../utils/validation'
+import {
+  NOTE_MAX_LENGTH,
+  PARTS_OF_SPEECH,
+  cleanStockExtras,
+  cleanStockInput,
+  findDuplicate,
+  guessCategory,
+} from '../utils/validation'
 import { toErrorMessage } from '../utils/errors'
 
 /**
@@ -44,6 +51,9 @@ export default function StockForm({
   // 編集時は既存の内容を初期値にする
   const [english, setEnglish] = useState(initialValues?.english ?? '')
   const [japanese, setJapanese] = useState(initialValues?.japanese ?? '')
+  // 任意項目：品詞（単語のときだけ）とコメント
+  const [partOfSpeech, setPartOfSpeech] = useState(initialValues?.part_of_speech ?? null)
+  const [note, setNote] = useState(initialValues?.note ?? '')
   // 種類（単語 / フレーズ）。編集時は今の種類、追加時は表示中の絞り込み、「すべて」なら自動判定
   const [category, setCategory] = useState(initialValues?.category ?? defaultCategory ?? 'word')
   // 種類が決まっているか（決まっていなければ、英語の入力に合わせて自動で切り替える）
@@ -61,7 +71,7 @@ export default function StockForm({
   const title = isAdd ? `${categoryLabel}を追加` : `${categoryLabel}を編集`
   // 削除の確認を表示中か（編集時のみ）
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const isEmpty = english.trim() === '' && japanese.trim() === ''
+  const isEmpty = english.trim() === '' && japanese.trim() === '' && note.trim() === ''
 
   // 同じ英語がすでに登録されていないか（編集中のデータ自身は除く）
   const duplicate = useMemo(
@@ -78,23 +88,28 @@ export default function StockForm({
 
     // 前後の空白を取り除き、空欄チェックを行う
     const { values, errors, isValid } = cleanStockInput({ english, japanese })
+    // 任意項目（品詞はフレーズでは保存しない、コメントは空なら未設定）
+    const extras = cleanStockExtras({ category, partOfSpeech, note })
     setFieldErrors(errors)
-    setSubmitError('')
+    setSubmitError(extras.error)
     setSavedMessage('')
     if (!isValid) {
       // 空欄のほうにカーソルを移して、すぐ入力できるようにする
       ;(errors.english ? englishRef : japaneseRef).current?.focus()
       return
     }
+    if (extras.error) return
 
     savingRef.current = true
     setSaving(true)
     try {
-      await onSubmit({ category, ...values })
+      await onSubmit({ category, ...values, ...extras.values })
       if (addAnother) {
         // 続けて登録：入力欄を空にして英語欄に戻る
         setEnglish('')
         setJapanese('')
+        setPartOfSpeech(null)
+        setNote('')
         setSavedMessage(`「${values.english}」を保存しました`)
         englishRef.current?.focus()
       } else {
@@ -254,6 +269,47 @@ export default function StockForm({
             error={fieldErrors.japanese}
             readOnly={saving}
           />
+        </div>
+
+        {/* 品詞（任意・単語のときだけ）：押して選ぶ。もう一度押すと解除 */}
+        {category === 'word' && (
+          <fieldset className="pos-field" disabled={saving}>
+            <legend className="pos-legend">品詞（任意）</legend>
+            <div className="pos-list">
+              {PARTS_OF_SPEECH.map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  className={`pos-chip${partOfSpeech === pos ? ' is-active' : ''}`}
+                  aria-pressed={partOfSpeech === pos}
+                  onClick={() => setPartOfSpeech((current) => (current === pos ? null : pos))}
+                >
+                  {pos}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {/* コメント（任意）：Enter は改行 */}
+        <div className="field-group">
+          <div className="group-field">
+            <label htmlFor={`${id}-note`} className="field-label">
+              コメント（任意）
+            </label>
+            <AutoTextarea
+              id={`${id}-note`}
+              className="group-input group-input-note"
+              value={note}
+              onChange={(e) => {
+                setNote(e.target.value)
+                if (submitError) setSubmitError('')
+              }}
+              placeholder="例：会議でよく使う／似た表現 vague"
+              maxLength={NOTE_MAX_LENGTH}
+              readOnly={saving}
+            />
+          </div>
         </div>
 
         <p className="keyboard-hint" aria-hidden="true">

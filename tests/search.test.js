@@ -3,7 +3,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { filterStocks, sortByEnglish } from '../src/utils/search.js'
-import { cleanStockInput, findDuplicate, guessCategory, validateNewPassword } from '../src/utils/validation.js'
+import {
+  cleanStockExtras,
+  cleanStockInput,
+  findDuplicate,
+  guessCategory,
+  NOTE_MAX_LENGTH,
+  PARTS_OF_SPEECH,
+  validateNewPassword,
+} from '../src/utils/validation.js'
 
 const stocks = [
   { id: '1', category: 'word', english: 'Prioritize', japanese: '優先する' },
@@ -119,4 +127,29 @@ test('パスワード変更：空欄・8文字未満・確認用と不一致は�
   assert.ok(validateNewPassword('', ''))
   assert.ok(validateNewPassword('abc1234', 'abc1234'))
   assert.ok(validateNewPassword('abcd1234', 'abcd12345'))
+})
+
+test('品詞：単語のときは一覧の品詞を保存できる', () => {
+  assert.equal(cleanStockExtras({ category: 'word', partOfSpeech: '形容詞' }).values.part_of_speech, '形容詞')
+  assert.equal(PARTS_OF_SPEECH.length, 10)
+})
+
+test('品詞：任意なので、未選択なら null', () => {
+  assert.equal(cleanStockExtras({ category: 'word', partOfSpeech: null }).values.part_of_speech, null)
+})
+
+test('品詞：フレーズでは保存しない／一覧に無い値は保存しない', () => {
+  assert.equal(cleanStockExtras({ category: 'phrase', partOfSpeech: '名詞' }).values.part_of_speech, null)
+  assert.equal(cleanStockExtras({ category: 'word', partOfSpeech: '形容動詞' }).values.part_of_speech, null)
+})
+
+test('コメント：前後の空白を取り除き、空なら null', () => {
+  assert.equal(cleanStockExtras({ category: 'word', note: '  会議でよく使う  ' }).values.note, '会議でよく使う')
+  assert.equal(cleanStockExtras({ category: 'word', note: '   ' }).values.note, null)
+  assert.equal(cleanStockExtras({ category: 'phrase' }).values.note, null)
+})
+
+test('コメント：上限の文字数まではOK、超えるとエラー', () => {
+  assert.equal(cleanStockExtras({ category: 'word', note: 'あ'.repeat(NOTE_MAX_LENGTH) }).error, '')
+  assert.ok(cleanStockExtras({ category: 'word', note: 'あ'.repeat(NOTE_MAX_LENGTH + 1) }).error)
 })

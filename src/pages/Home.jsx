@@ -12,7 +12,7 @@ export default function Home({ wordCount, phraseCount, onNavigate }) {
       <h1 className="visually-hidden">ホーム</h1>
 
       <button type="button" className="btn btn-primary btn-block btn-large" onClick={() => onNavigate('quiz')}>
-        復習をはじめる
+        勉強をはじめる
       </button>
 
       <p className="section-label">ストック</p>

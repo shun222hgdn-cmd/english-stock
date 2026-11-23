@@ -482,6 +482,55 @@ button:disabled {
   color: var(--ink);
 }
 
+/* 品詞の選択（任意）：押して選ぶ小さな札。選択中は青ペン */
+.pos-field {
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.pos-legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pos-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pos-chip {
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.pos-chip:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+.pos-chip.is-active {
+  border-color: var(--pen);
+  background-color: var(--pen-soft);
+  color: var(--pen);
+  font-weight: 600;
+}
+
+/* コメント欄は少し小さめの文字 */
+.group-input-note {
+  font-size: 0.95rem;
+}
+
 /* キーボード操作のヒント（タッチ操作の端末では表示しない） */
 .keyboard-hint {
   margin: -2px 0 12px;
@@ -731,6 +780,19 @@ code {
   font-size: 0.75rem;
 }
 
+/* コメント（2行まで表示し、それ以上は「…」） */
+.stock-note {
+  display: -webkit-box;
+  margin-top: 4px;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 .stock-row-arrow {
   flex-shrink: 0;
   color: var(--ink-faint);
@@ -821,8 +883,17 @@ code {
 }
 
 .quiz-answer,
-.quiz-tap-hint {
+.quiz-tap-hint,
+.quiz-note {
   display: block;
+}
+
+/* 答えを開いたときのコメント */
+.quiz-note {
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  white-space: pre-wrap;
 }
 
 .quiz-answer {
