@@ -17,6 +17,7 @@ import { isSupabaseConfigured } from './lib/supabase'
 import { loadFolderPreference, saveFolderPreference } from './lib/folderPreference'
 import { toDisplayId } from './utils/loginId'
 import { hashFolderPassword, verifyFolderPassword } from './utils/folderLock'
+import { buildCsvFileName, buildStocksCsv } from './utils/csv'
 import { loadChoice, saveChoice } from './lib/preferences'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
@@ -149,6 +150,24 @@ function MainApp({ userId, email, onSignOut }) {
   /** 鍵がかかっていない、または今開いているフォルダか */
   function isFolderOpen(folder) {
     return !folder.lock_hash || folder.id === unlockedFolderId
+  }
+
+  /**
+   * 表示中のフォルダの単語・フレーズを CSV ファイルにしてダウンロードする。
+   * ファイルはこの端末の中だけで作られ、どこにも送られない。
+   */
+  function exportCurrentFolderCsv() {
+    if (!currentFolder || !isFolderOpen(currentFolder)) return
+    const csv = buildStocksCsv(folderStocks)
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = buildCsvFileName(currentFolder.name)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    // ダウンロードが始まってから、一時的な URL を片付ける
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
   // 鍵付きフォルダを開く（パスワードが正しければ true）
@@ -301,6 +320,10 @@ function MainApp({ userId, email, onSignOut }) {
       {settingsOpen && (
         <SettingsDialog
           loginId={toDisplayId(email)}
+          folderName={currentFolder?.name}
+          exportCount={folderStocks.length}
+          canExport={Boolean(currentFolder) && isFolderOpen(currentFolder)}
+          onExportCsv={exportCurrentFolderCsv}
           signingOut={signingOut}
           onOpenPassword={() => {
             // 設定を閉じてから、パスワード変更を開く

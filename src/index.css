@@ -1190,6 +1190,19 @@ code {
   flex: 1;
 }
 
+/* 設定の行の下に出す小さな説明（例：「しゅん」の単語・フレーズ 11件） */
+.settings-row-sub {
+  display: block;
+  margin-top: 1px;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+
+.settings-done {
+  margin: 0 4px 10px;
+  font-size: 0.85rem;
+}
+
 .settings-row-danger,
 .settings-row-danger svg {
   color: var(--red);

@@ -1,20 +1,41 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import Modal from './Modal'
-import { ChevronRightIcon, CloseIcon, KeyIcon, LogoutIcon } from './Icons'
+import { CheckIcon, ChevronRightIcon, CloseIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
 
 /**
- * 設定（ヘッダーの歯車から開く）。ログイン中の ID と、パスワード変更・ログアウトをまとめる。
+ * 設定（ヘッダーの歯車から開く）。
+ * ログイン中の ID と、CSV の書き出し・パスワード変更・ログアウトをまとめる。
  *
  * @param {{
  *   loginId: string,               // ログイン中の ID（メールアドレスのアカウントはアドレス）
+ *   folderName?: string,           // 書き出す対象のフォルダ名（表示中のフォルダ）
+ *   exportCount: number,           // 書き出す件数
+ *   canExport: boolean,            // 書き出せるか（鍵が閉じているフォルダ・フォルダなしは不可）
+ *   onExportCsv: () => void,
  *   signingOut: boolean,
  *   onOpenPassword: () => void,
  *   onSignOut: () => void,
  *   onClose: () => void,
  * }} props
  */
-export default function SettingsDialog({ loginId, signingOut, onOpenPassword, onSignOut, onClose }) {
+export default function SettingsDialog({
+  loginId,
+  folderName,
+  exportCount,
+  canExport,
+  onExportCsv,
+  signingOut,
+  onOpenPassword,
+  onSignOut,
+  onClose,
+}) {
   const id = useId()
+  const [exported, setExported] = useState(false)
+
+  function handleExport() {
+    onExportCsv()
+    setExported(true)
+  }
 
   return (
     <Modal titleId={`${id}-title`} onRequestClose={onClose}>
@@ -30,6 +51,27 @@ export default function SettingsDialog({ loginId, signingOut, onOpenPassword, on
       <p className="muted folder-lead">ログイン中：{loginId}</p>
 
       <ul className="ruled-list">
+        <li>
+          <button type="button" className="settings-row" onClick={handleExport} disabled={!canExport}>
+            <DownloadIcon size={18} />
+            <span className="settings-row-label">
+              CSVで書き出す
+              <span className="settings-row-sub">
+                {canExport
+                  ? `「${folderName}」の単語・フレーズ ${exportCount}件`
+                  : folderName
+                    ? `「${folderName}」は鍵が閉じているため書き出せません`
+                    : 'フォルダがありません'}
+              </span>
+            </span>
+          </button>
+          {exported && (
+            <p className="saved-message settings-done" role="status">
+              <CheckIcon size={16} />
+              <span>書き出しました（ダウンロードフォルダを確認してください）</span>
+            </p>
+          )}
+        </li>
         <li>
           <button type="button" className="settings-row" onClick={onOpenPassword}>
             <KeyIcon size={18} />
