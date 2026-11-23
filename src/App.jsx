@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
 import PasswordDialog from './components/PasswordDialog'
 import SettingsDialog from './components/SettingsDialog'
+import ChatgptDialog from './components/ChatgptDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
 import StockPage from './pages/StockPage'
@@ -85,6 +86,7 @@ function MainApp({ userId, email, onSignOut }) {
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [chatgptOpen, setChatgptOpen] = useState(false)
   // この端末で前回選んだフォルダ（無ければ先頭のフォルダを表示）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadFolderPreference(userId))
   // 鍵付きフォルダのうち、今開いているもの（別のフォルダに切り替えるか、アプリを閉じると閉じる）
@@ -330,10 +332,16 @@ function MainApp({ userId, email, onSignOut }) {
             setSettingsOpen(false)
             setPasswordDialogOpen(true)
           }}
+          onOpenChatgpt={() => {
+            setSettingsOpen(false)
+            setChatgptOpen(true)
+          }}
           onSignOut={handleSignOut}
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {chatgptOpen && <ChatgptDialog onClose={() => setChatgptOpen(false)} />}
 
       {passwordDialogOpen && (
         <PasswordDialog

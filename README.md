@@ -28,6 +28,7 @@
 | 品詞・コメント（任意） | 単語には品詞（名詞・動詞・形容詞など10種類）をタップで選べる。単語・フレーズどちらにも500文字までのコメントを付けられる。一覧と復習（答えを開いたとき）に表示 |
 | フォルダの鍵（任意） | フォルダごとにパスワードをかけられる。鍵付きフォルダは開くときにパスワードが必要（別のフォルダに切り替えるかアプリを閉じるとまた閉じる）。忘れたら管理者パスワードで外せる。※画面での鍵のため、同じアカウントで API を直接使えば中身は読める |
 | CSVで書き出す | ⚙（設定）から、表示中のフォルダの単語・フレーズを CSV でダウンロード（種類・英語・日本語訳・品詞・コメント。Excel で文字化けしない UTF-8 BOM 付き）。バックアップにも使える |
+| ChatGPT連携 | ChatGPT（専用のGPT）から単語・フレーズを**追加だけ**できる（ChatGPT → アプリ の一方通行。アプリから AI は呼ばない）。⚙ → ChatGPT連携 で連携キーを発行・無効化。設定手順は `chatgpt/GPT_SETUP.md` |
 | 一覧表示 | Stock 画面で All / Words / Phrases を切り替えて表示。アルファベット順のカード表示、長いフレーズも折り返して全文表示 |
 | 編集・削除 | 各カードから編集。削除は確認ダイアログ付き |
 | 検索 | 英語・日本語の部分一致、英語の大文字・小文字は区別しない、入力に合わせて即時反映 |
@@ -320,6 +321,17 @@ https://<GitHubユーザー名>.github.io/english-stock/
 - 管理者パスワードを5回間違えると15分間ロック
 - **管理者パスワードを忘れたら**：SQL Editor で `delete from private.admin_settings;` を実行すると未設定に戻り、アプリから設定し直せる
 - **Supabase 管理画面からパスワードを変えたいとき**：一時的に `alter table auth.users disable trigger block_password_change;` → 変更 → `alter table auth.users enable trigger block_password_change;`
+
+### 11.8 ChatGPT 連携（任意）
+
+1. SQL Editor で `supabase/migrations/006_chatgpt_token.sql` を実行
+2. Edge Functions → Deploy a new function → Via Editor で、`supabase/functions/chatgpt/index.js`（エディタの index.ts に貼る）と `logic.js` を登録し、名前を `chatgpt` にしてデプロイ
+3. 関数の Settings で **Verify JWT を OFF** にして保存（連携キーは Supabase のログイン用トークンではないため）
+4. アプリを公開すると、GPT 用の API の説明書が `https://<ユーザー名>.github.io/english-stock/chatgpt-openapi.json` で公開される（`public/chatgpt-openapi.json`。server の URL は自分の Supabase に合わせる）
+5. GPT の作り方は `chatgpt/GPT_SETUP.md`
+
+- ChatGPT からできるのは「フォルダ一覧を見る」「単語・フレーズを追加（1回50件まで）」だけ。削除・編集・鍵付きフォルダへの追加はできない
+- 連携キーはハッシュだけを保存。漏れたら ⚙ → ChatGPT連携 → 連携をやめる で即無効化できる
 
 ## 12. セキュリティ上の注意事項
 
