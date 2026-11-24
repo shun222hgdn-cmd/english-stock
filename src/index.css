@@ -1049,8 +1049,8 @@ code {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 50px;
-  padding: 8px 4px;
+  min-height: 54px;
+  padding: 8px 8px;
   border: none;
   background: transparent;
   color: var(--ink);
@@ -1066,12 +1066,40 @@ code {
   color: var(--ink-faint);
 }
 
+/* 今のフォルダ：行ごと薄い青、名前とアイコンは青ペン */
+.folder-row.is-current {
+  background-color: var(--pen-soft);
+}
+
 .folder-row.is-current .folder-select {
+  color: var(--pen);
   font-weight: 700;
 }
 
 .folder-row.is-current .folder-select svg {
   color: var(--pen);
+}
+
+/* 鍵付きのしるし（名前のすぐ横に小さく） */
+.folder-lock-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.folder-select .folder-lock-mark svg {
+  color: var(--ink-faint);
+}
+
+/* 「⋯」で開く操作（鍵・名前変更・削除） */
+.folder-actions {
+  display: flex;
+  flex-shrink: 0;
+  animation: undo-in 0.14s ease-out;
+}
+
+.folder-more {
+  flex-shrink: 0;
+  color: var(--ink-faint);
 }
 
 .folder-select-name {
@@ -1082,6 +1110,7 @@ code {
 
 .folder-select-count {
   margin-left: auto;
+  padding-right: 4px;
   color: var(--ink-faint);
   font-size: 0.85rem;
   font-weight: 400;

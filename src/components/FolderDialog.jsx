@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Modal from './Modal'
-import { CheckIcon, FolderIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
+import { CloseIcon, FolderIcon, LockIcon, MoreIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
 import { cleanFolderName } from '../utils/folders'
 import { FOLDER_LOCK_MIN_LENGTH, validateFolderLock } from '../utils/folderLock'
 import { useBusy } from '../hooks/useBusy'
@@ -37,6 +37,8 @@ export default function FolderDialog({
 }) {
   // 行ごとの操作（null: 通常 / { type: 'rename' | 'delete' | 'lock', id }）
   const [rowMode, setRowMode] = useState(null)
+  // 「⋯」で操作（鍵・名前変更・削除）を出している行の id
+  const [menuId, setMenuId] = useState(null)
   const { busy, error, run } = useBusy('保存に失敗しました。')
   const [newName, setNewName] = useState('')
   const [newNameError, setNewNameError] = useState('')
@@ -93,18 +95,30 @@ export default function FolderDialog({
       return (
         <>
           <p className="folder-delete-text">
-            「{folder.name}」と中の {count} 件を削除します。元に戻せません。
+            「{folder.name}」と中の {count} 件を削除します。
           </p>
           <div className="folder-row-actions">
             <button type="button" className="btn btn-secondary btn-small" onClick={cancel} disabled={busy}>
               キャンセル
             </button>
-            <button type="button" className="btn btn-danger btn-small" onClick={() => runRow(() => onDelete(folder.id))} disabled={busy}>
+            {/* 削除したら閉じて、画面の下の「元に戻す」が見えるようにする */}
+            <button
+              type="button"
+              className="btn btn-danger btn-small"
+              onClick={async () => (await run(() => onDelete(folder.id))) && onClose()}
+              disabled={busy}
+            >
               {busy ? '削除中…' : '削除'}
             </button>
           </div>
         </>
       )
+    }
+
+    const menuOpen = menuId === folder.id
+    const openMode = (type) => {
+      setMenuId(null)
+      setRowMode({ type, id: folder.id })
     }
 
     return (
@@ -118,44 +132,58 @@ export default function FolderDialog({
         >
           <FolderIcon size={20} />
           <span className="folder-select-name">{folder.name}</span>
-          {isOpen ? (
-            <span className="folder-select-count">{count}件</span>
-          ) : (
-            <span className="folder-select-count" aria-label="鍵がかかっています">
+          {isLocked && (
+            <span className="folder-lock-mark" aria-label="鍵付き">
               <LockIcon size={15} />
             </span>
           )}
-          {isCurrent && <CheckIcon size={18} />}
+          {isOpen && !menuOpen && <span className="folder-select-count">{count}件</span>}
         </button>
+
+        {/* 操作は「⋯」を押したときだけ出す（ふだんの一覧をすっきりさせる） */}
+        {menuOpen && (
+          <span className="folder-actions">
+            <button
+              type="button"
+              className={`icon-btn${isLocked ? ' is-locked' : ''}`}
+              onClick={() => openMode('lock')}
+              aria-label={isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
+              title={isLocked ? '鍵を外す' : '鍵をかける'}
+              disabled={locked}
+            >
+              {isLocked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => openMode('rename')}
+              aria-label={`「${folder.name}」の名前を変更`}
+              title={isOpen ? '名前を変更' : '鍵を開けると変更できます'}
+              disabled={locked || !isOpen}
+            >
+              <PencilIcon size={18} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn icon-btn-danger"
+              onClick={() => openMode('delete')}
+              aria-label={`「${folder.name}」を削除`}
+              title={folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'}
+              disabled={locked || folders.length <= 1 || !isOpen}
+            >
+              <TrashIcon size={18} />
+            </button>
+          </span>
+        )}
         <button
           type="button"
-          className={`icon-btn${isLocked ? ' is-locked' : ''}`}
-          onClick={() => setRowMode({ type: 'lock', id: folder.id })}
-          aria-label={isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}
-          title={isLocked ? '鍵を外す' : '鍵をかける'}
+          className="icon-btn folder-more"
+          onClick={() => setMenuId(menuOpen ? null : folder.id)}
+          aria-label={menuOpen ? '操作を閉じる' : `「${folder.name}」の操作`}
+          aria-expanded={menuOpen}
           disabled={locked}
         >
-          {isLocked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
-        </button>
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={() => setRowMode({ type: 'rename', id: folder.id })}
-          aria-label={`「${folder.name}」の名前を変更`}
-          title={isOpen ? '名前を変更' : '鍵を開けると変更できます'}
-          disabled={locked || !isOpen}
-        >
-          <PencilIcon size={18} />
-        </button>
-        <button
-          type="button"
-          className="icon-btn icon-btn-danger"
-          onClick={() => setRowMode({ type: 'delete', id: folder.id })}
-          aria-label={`「${folder.name}」を削除`}
-          title={folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'}
-          disabled={locked || folders.length <= 1 || !isOpen}
-        >
-          <TrashIcon size={18} />
+          {menuOpen ? <CloseIcon size={18} /> : <MoreIcon size={20} />}
         </button>
       </>
     )
@@ -163,8 +191,6 @@ export default function FolderDialog({
 
   return (
     <Modal title="フォルダ" onClose={onClose} busy={busy} closeOnBackdrop={!rowMode && !newName.trim()}>
-      <p className="muted folder-lead">使う人ごとにフォルダを分けられます。</p>
-
       <ul className="folder-list">
         {folders.map((folder) => {
           const mode = rowMode?.id === folder.id ? rowMode.type : null
