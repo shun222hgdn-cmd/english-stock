@@ -219,7 +219,6 @@ export default function FolderDialog({
             setNewNameError('')
           }}
           aria-label="新しいフォルダ名"
-          placeholder="新しいフォルダ名（例：ソヒ）"
           autoComplete="off"
           enterKeyHint="done"
           aria-invalid={Boolean(newNameError)}
@@ -338,14 +337,16 @@ function LockForm({ folder, busy, onSetLock, onRemoveLock, onCancel }) {
   return (
     <RowForm onSubmit={handleSubmit} busy={busy} submitLabel={isLocked ? '鍵を外す' : '鍵をかける'} onCancel={onCancel} error={error}>
       <p className="folder-lock-title">{isLocked ? `「${folder.name}」の鍵を外す` : `「${folder.name}」に鍵をかける`}</p>
+      {/* 鍵をかけるときは入力欄が2つ並ぶので、小さく見出しを付ける（外すときは1つなので無し） */}
+      {!isLocked && <span className="folder-lock-label">パスワード（{FOLDER_LOCK_MIN_LENGTH}文字以上）</span>}
       {input(password, setPassword, {
-        placeholder: isLocked ? '今のパスワード' : `パスワード（${FOLDER_LOCK_MIN_LENGTH}文字以上）`,
         'aria-label': isLocked ? '今のパスワード' : '鍵のパスワード',
         autoFocus: true,
       })}
       {!isLocked && (
         <>
-          {input(confirmation, setConfirmation, { placeholder: '確認のため、もう一度', 'aria-label': '確認用のパスワード' })}
+          <span className="folder-lock-label">もう一度</span>
+          {input(confirmation, setConfirmation, { 'aria-label': '確認用のパスワード' })}
           <p className="muted folder-lock-note">鍵付きのフォルダは、開くときにパスワードが必要になります。</p>
         </>
       )}

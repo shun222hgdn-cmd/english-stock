@@ -56,7 +56,6 @@ export default function Login({ onSignIn }) {
             autoCapitalize: 'none',
             autoCorrect: 'off',
             spellCheck: 'false',
-            placeholder: '例：shun',
           })}
           {field('login-password', 'パスワード', password, setPassword, { type: 'password', autoComplete: 'current-password' })}
 

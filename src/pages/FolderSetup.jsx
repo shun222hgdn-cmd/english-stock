@@ -31,7 +31,7 @@ export default function FolderSetup({ onCreate }) {
           使う人ごとにフォルダを分けられます。
         </p>
         <div className="field">
-          <label htmlFor="first-folder">最初のフォルダ名（例：自分の名前）</label>
+          <label htmlFor="first-folder">最初のフォルダ名</label>
           <input
             id="first-folder"
             className="input"

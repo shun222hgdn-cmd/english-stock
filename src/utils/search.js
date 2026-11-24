@@ -37,8 +37,8 @@ export const SORTS = [
   { value: 'abc', label: 'ABC順' },
   { value: 'new', label: '新しい順' },
   { value: 'old', label: '古い順' },
-  { value: 'learned', label: '覚えたが上' },
-  { value: 'unlearned', label: 'まだが上' },
+  { value: 'learned', label: '覚えたものから' },
+  { value: 'unlearned', label: '覚えていないものから' },
 ]
 
 const byDate = (a, b) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''))

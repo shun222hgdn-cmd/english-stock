@@ -231,3 +231,13 @@ export function MoreIcon(props) {
     </Icon>
   )
 }
+
+export function ClipboardIcon(props) {
+  return (
+    <Icon {...props}>
+      <rect x="6" y="4.5" width="12" height="16" rx="2" />
+      <path d="M9.5 4.5V3.5h5v1" />
+      <path d="M9 10h6M9 13.5h6M9 17h3.5" />
+    </Icon>
+  )
+}

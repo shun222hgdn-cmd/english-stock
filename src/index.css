@@ -1821,3 +1821,179 @@ body:has(dialog[open]) {
     transition: none !important;
   }
 }
+
+/* =========================================================
+   見た目の仕上げ（紙の単語帳のまま、触り心地を良くする）
+   ・スマホでは、ダイアログを下から出す（片手で届く・閉じる場所が分かりやすい）
+   ・設定は、関係するものを角丸の紙にまとめる
+   ・検索は、角の丸い入力欄に
+   ・下のタブは、選んでいるものに薄い青の札
+   ・押したときに、わずかに沈む
+   ========================================================= */
+
+/* ---------- ダイアログ：スマホでは下から ---------- */
+@media (max-width: 600px) {
+  .modal {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 24px);
+    margin: auto 0 0;
+    border: none;
+    border-top: 1px solid var(--rule-strong);
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: sheet-up 0.22s ease-out;
+  }
+
+  /* 上の小さなつまみ */
+  .modal-body::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: -8px auto 12px;
+    border-radius: 2px;
+    background-color: var(--rule-strong);
+  }
+}
+
+.modal::backdrop {
+  animation: backdrop-in 0.2s ease-out;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(32px);
+    opacity: 0;
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- 設定：まとまりごとに角丸の紙 ---------- */
+.settings-group {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-group > li + li {
+  border-top: 1px solid var(--rule);
+}
+
+.settings-group .settings-row {
+  padding: 12px 14px;
+}
+
+.settings-group .settings-speech,
+.settings-group .settings-confirm {
+  padding: 12px 14px;
+}
+
+.settings-group .settings-done {
+  margin: 0 14px 12px;
+}
+
+/* ---------- 検索：角の丸い入力欄 ---------- */
+.search-bar {
+  padding: 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  background-color: var(--sheet);
+}
+
+.search-bar:focus-within {
+  border-color: var(--pen);
+  box-shadow: 0 0 0 3px var(--pen-soft);
+}
+
+/* ---------- 下のタブ：選んでいるものに薄い青の札 ---------- */
+.nav-btn {
+  isolation: isolate;
+}
+
+.nav-btn.is-active {
+  color: var(--pen);
+  font-weight: 600;
+}
+
+.nav-btn.is-active::before {
+  display: none;
+}
+
+.nav-btn.is-active::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 6px;
+  left: 50%;
+  width: 56px;
+  height: 30px;
+  transform: translateX(-50%);
+  border-radius: 15px;
+  background-color: var(--pen-soft);
+}
+
+/* ---------- 押したときの手ごたえ ---------- */
+.btn,
+.learned-btn,
+.lang-switch-btn,
+.segmented-btn,
+.folder-btn {
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.08s;
+}
+
+.btn:active:not(:disabled),
+.learned-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.stock-row:active,
+.settings-row:active:not(:disabled),
+.folder-select:active:not(:disabled) {
+  background-color: var(--pen-soft);
+}
+
+/* ---------- 細かな整え ---------- */
+.page-title {
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+}
+
+.stock-row {
+  padding: 14px 4px;
+}
+
+/* ヘッダーのフォルダ切り替え：押せることが分かるよう、薄い枠の札に */
+.folder-btn {
+  padding: 4px 10px 4px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  min-height: 34px;
+}
+
+/* 鍵をかけるときの、入力欄の小さな見出し */
+.folder-lock-label {
+  margin-bottom: -4px;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal::backdrop {
+    animation: none;
+  }
+}

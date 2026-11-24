@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import Modal from './Modal'
 import Choice from './Choice'
-import { CheckIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LogoutIcon, TrashIcon } from './Icons'
+import { CheckIcon, ChevronRightIcon, ClipboardIcon, DownloadIcon, KeyIcon, LogoutIcon, TrashIcon } from './Icons'
 import { useBusy } from '../hooks/useBusy'
 import {
   SPEECH_ACCENTS,
@@ -27,6 +27,7 @@ import { saveValue } from '../lib/preferences'
  *   onDeleteLearned: () => Promise<void>,
  *   signingOut: boolean,
  *   onOpenPassword: () => void,
+ *   onOpenBulk: () => void,         // まとめて追加を開く
  *   onSignOut: () => void,
  *   onClose: () => void,
  * }} props
@@ -41,6 +42,7 @@ export default function SettingsDialog({
   onDeleteLearned,
   signingOut,
   onOpenPassword,
+  onOpenBulk,
   onSignOut,
   onClose,
 }) {
@@ -64,7 +66,15 @@ export default function SettingsDialog({
     <Modal title="設定" onClose={onClose}>
       <p className="muted folder-lead">ログイン中：{loginId}</p>
 
-      <ul className="ruled-list">
+      {/* 表示中のフォルダに対する操作 */}
+      <ul className="settings-group">
+        <li>
+          <button type="button" className="settings-row" onClick={onOpenBulk} disabled={!canExport}>
+            <ClipboardIcon size={18} />
+            <span className="settings-row-label">まとめて追加</span>
+            <ChevronRightIcon size={18} className="settings-row-arrow" />
+          </button>
+        </li>
         <li>
           <button
             type="button"
@@ -145,6 +155,9 @@ export default function SettingsDialog({
             </button>
           )}
         </li>
+      </ul>
+
+      <ul className="settings-group">
         <li className="settings-speech">
           <p className="settings-speech-title">発音</p>
           {isSpeechSupported() ? (
@@ -181,6 +194,9 @@ export default function SettingsDialog({
             <p className="settings-row-sub">この端末・ブラウザでは発音を使えません</p>
           )}
         </li>
+      </ul>
+
+      <ul className="settings-group">
         <li>
           <button type="button" className="settings-row" onClick={onOpenPassword}>
             <KeyIcon size={18} />

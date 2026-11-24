@@ -48,7 +48,6 @@ export default function LockedFolder({ folderName, onUnlock, onClearWithAdmin })
           type="password"
           autoComplete="off"
           aria-label={adminMode ? '管理者パスワード' : 'フォルダのパスワード'}
-          placeholder={adminMode ? '管理者パスワード' : 'パスワード'}
           value={password}
           onChange={(e) => {
             setPassword(e.target.value)

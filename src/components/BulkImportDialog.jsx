@@ -102,7 +102,6 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
               setError('')
             }}
             aria-label="追加するリスト"
-            placeholder={'resilient | 回復力のある | 形容詞\nbreak the ice | 場を和ませる'}
             spellCheck="false"
             autoComplete="off"
             data-autofocus=""

@@ -3,7 +3,6 @@ import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
 import StockDetail from '../components/StockDetail'
-import BulkImportDialog from '../components/BulkImportDialog'
 import Choice from '../components/Choice'
 import { PlusIcon } from '../components/Icons'
 import { SORTS, filterStocks, groupByInitial, sortStocks } from '../utils/search'
@@ -25,17 +24,14 @@ const NOUNS = { all: '単語・フレーズ・例文', word: '単語', phrase: '
  *   onEdit: (id: string, input: object) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
  *   onSetLearned: (id: string, learned: boolean) => Promise<void>,
- *   onAddMany: (items: Array<object>) => Promise<number>, // 追加した件数を返す
- *   folderName: string,
  * }} props
  */
-export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onSetLearned, onAddMany, folderName }) {
+export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onSetLearned }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [sort, setSort] = useState(() => loadChoice('stockSort', SORTS.map((s) => s.value), 'abc'))
-  // 開いている画面：詳細（id で持ち、編集後も最新を表示）・登録/編集フォーム・まとめて追加
+  // 開いている画面：詳細（id で持ち、編集後も最新を表示）・登録/編集フォーム
   const [detailId, setDetailId] = useState(null)
   const [form, setForm] = useState(null) // null / { mode: 'add' } / { mode: 'edit', stock }
-  const [bulkOpen, setBulkOpen] = useState(false)
 
   const noun = NOUNS[filter] ?? NOUNS.all
   const detailStock = detailId && stocks.find((stock) => stock.id === detailId)
@@ -65,12 +61,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
 
   return (
     <section className="page">
-      <div className="page-header">
-        <h1 className="page-title">単語帳</h1>
-        <button type="button" className="btn btn-text" onClick={() => setBulkOpen(true)}>
-          まとめて追加
-        </button>
-      </div>
+      <h1 className="page-title">単語帳</h1>
 
       {/* 追加ボタン：右下に大きく（親指で押しやすい位置） */}
       <button type="button" className="fab" onClick={() => setForm({ mode: 'add' })} aria-label={`${noun}を追加`} title="追加">
@@ -127,10 +118,6 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
             ))}
           </div>
         ))}
-
-      {bulkOpen && (
-        <BulkImportDialog folderName={folderName} existingStocks={stocks} onImport={onAddMany} onClose={() => setBulkOpen(false)} />
-      )}
 
       {/* 編集画面を開いている間は詳細を隠し、閉じたら詳細に戻る（削除したら消える） */}
       {detailStock && !form && (

@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
 import PasswordDialog from './components/PasswordDialog'
 import UndoBar from './components/UndoBar'
+import BulkImportDialog from './components/BulkImportDialog'
 import SettingsDialog from './components/SettingsDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
@@ -52,7 +53,7 @@ function MainApp({ userId, email, onSignOut }) {
   const [activePage, setActivePage] = useState('stock') // 'stock'：単語帳 / 'quiz'：暗記
   // 単語帳の表示切り替え（すべて / 単語 / フレーズ / 例文）。端末に保存して、開き直しても前回の表示で始める
   const [stockFilter, setStockFilter] = useState(() => loadChoice('stockFilter', QUIZ_CATEGORIES.map((c) => c.value), 'all'))
-  const [dialog, setDialog] = useState(null) // 'folders' / 'settings' / 'password'
+  const [dialog, setDialog] = useState(null) // 'folders' / 'settings' / 'password' / 'bulk'
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   // この端末で前回選んだフォルダ（無ければ先頭）と、今開いている鍵付きフォルダ（切り替えるか閉じると閉まる）
@@ -209,7 +210,6 @@ function MainApp({ userId, email, onSignOut }) {
         }}
         // 追加は表示中のフォルダに入れる
         onAdd={(input) => stocksData.addStocks(currentFolder.id, [input])}
-        onAddMany={(items) => stocksData.addStocks(currentFolder.id, items)}
         onEdit={stocksData.editStock}
         onSetLearned={stocksData.setLearned}
         // 消したら数秒だけ「元に戻す」を出す（同じ id・同じ内容で戻す）
@@ -218,7 +218,6 @@ function MainApp({ userId, email, onSignOut }) {
           await stocksData.removeStock(id)
           setUndo({ key: Date.now(), message: `「${stock.english}」を削除しました`, restore: () => stocksData.restoreStocks([stock]) })
         }}
-        folderName={currentFolder.name}
       />
     )
   }
@@ -307,12 +306,23 @@ function MainApp({ userId, email, onSignOut }) {
           }}
           signingOut={signingOut}
           onOpenPassword={() => setDialog('password')}
+          onOpenBulk={() => setDialog('bulk')}
           onSignOut={handleSignOut}
           onClose={closeDialog}
         />
       )}
 
       {dialog === 'password' && <PasswordDialog email={email} onClose={closeDialog} />}
+
+      {/* まとめて追加（⚙ 設定から）：表示中のフォルダに入れる */}
+      {dialog === 'bulk' && currentFolder && isFolderOpen(currentFolder) && (
+        <BulkImportDialog
+          folderName={currentFolder.name}
+          existingStocks={folderStocks}
+          onImport={(items) => stocksData.addStocks(currentFolder.id, items)}
+          onClose={closeDialog}
+        />
+      )}
 
       {undo && <UndoBar key={undo.key} message={undo.message} onUndo={undo.restore} onClose={clearUndo} />}
     </div>

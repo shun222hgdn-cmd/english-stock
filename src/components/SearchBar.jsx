@@ -11,7 +11,6 @@ export default function SearchBar({ value, onChange, label }) {
       <input
         type="search"
         className="search-input"
-        placeholder="英語・日本語で検索"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
