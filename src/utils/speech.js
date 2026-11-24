@@ -1,7 +1,7 @@
 // 英語の発音（読み上げ）。スマホ・パソコンのブラウザに最初から入っている音声合成（Web Speech API）を使う。
 // 外部のサービスや API キーは使わない。端末によって声は少し違う。
 
-import { loadChoice } from '../lib/preferences.js'
+import { loadChoice, saveValue } from '../lib/preferences.js'
 
 /** 発音の設定で選べる値 */
 export const SPEECH_ACCENTS = [
@@ -20,6 +20,10 @@ export function loadSpeechSettings() {
     rate: loadChoice('speechRate', SPEECH_RATES.map((r) => r.value), 'normal'),
   }
 }
+
+/** 自動で読み上げるか（暗記で英語が出たとき・詳細を開いたとき）。最初はオン */
+export const loadAutoSpeak = () => loadChoice('autoSpeak', ['on', 'off'], 'on') === 'on'
+export const saveAutoSpeak = (on) => saveValue('autoSpeak', on ? 'on' : 'off')
 
 /** この端末・ブラウザで読み上げが使えるか */
 export function isSpeechSupported() {

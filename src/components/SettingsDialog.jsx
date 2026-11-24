@@ -3,7 +3,15 @@ import Modal from './Modal'
 import Choice from './Choice'
 import { CheckIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LogoutIcon, TrashIcon } from './Icons'
 import { useBusy } from '../hooks/useBusy'
-import { SPEECH_ACCENTS, SPEECH_RATES, isSpeechSupported, loadSpeechSettings, speakEnglish } from '../utils/speech'
+import {
+  SPEECH_ACCENTS,
+  SPEECH_RATES,
+  isSpeechSupported,
+  loadAutoSpeak,
+  loadSpeechSettings,
+  saveAutoSpeak,
+  speakEnglish,
+} from '../utils/speech'
 import { saveValue } from '../lib/preferences'
 
 /**
@@ -42,6 +50,7 @@ export default function SettingsDialog({
   // 発音の設定（この端末に保存）。選ぶとその場で見本を読み上げる
   const [speech, setSpeech] = useState(loadSpeechSettings)
   const speechRef = useRef(speech) // 続けて押しても最新の組み合わせで読む
+  const [autoSpeak, setAutoSpeak] = useState(loadAutoSpeak)
 
   function chooseSpeech(key, value, sample) {
     const next = { ...speechRef.current, [key]: value }
@@ -153,6 +162,19 @@ export default function SettingsDialog({
                 options={SPEECH_RATES}
                 value={speech.rate}
                 onChange={(value) => chooseSpeech('rate', value, 'Nice to meet you')}
+              />
+              <Choice
+                variant="lang-switch"
+                label="自動読み上げ"
+                options={[
+                  { value: 'on', label: '自動で読む' },
+                  { value: 'off', label: '押したときだけ' },
+                ]}
+                value={autoSpeak ? 'on' : 'off'}
+                onChange={(value) => {
+                  setAutoSpeak(value === 'on')
+                  saveAutoSpeak(value === 'on')
+                }}
               />
             </>
           ) : (

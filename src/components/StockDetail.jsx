@@ -4,11 +4,13 @@ import SpeakButton from './SpeakButton'
 import LearnedButton from './LearnedButton'
 import { ChevronRightIcon, PencilIcon } from './Icons'
 import { categoryLabel, isLongText } from '../utils/validation'
+import { loadAutoSpeak, speakEnglish, stopSpeaking } from '../utils/speech'
 
 /**
  * 単語・フレーズ・例文の詳細（一覧の行を押すと開く）。英語を大きく、日本語訳・品詞・コメントを省略せずに表示し、
  * 右上の「編集」から編集画面に進む（いきなり編集画面にならないので、見るだけのときに安心）。
  * 下の「前へ / 次へ」（キーボードの ← →）で、一覧の並び順のまま隣のものに移れる。
+ * 自動読み上げがオンなら、開いたとき・移ったときに英語を読む（🔊 でもう一度聞ける）。
  *
  * @param {{
  *   stock: object,
@@ -22,6 +24,12 @@ import { categoryLabel, isLongText } from '../utils/validation'
  */
 export default function StockDetail({ stock, position, onPrev, onNext, onSetLearned, onEdit, onClose }) {
   const titleId = useId()
+
+  // 自動読み上げがオンなら、開いたとき・前後に移ったときに英語を読む（閉じたら止める）
+  useEffect(() => {
+    if (loadAutoSpeak()) speakEnglish(stock.english)
+    return stopSpeaking
+  }, [stock.english])
 
   // キーボードの ← → で前後に移る
   useEffect(() => {

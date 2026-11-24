@@ -211,3 +211,13 @@ export function SpeakerIcon(props) {
     </Icon>
   )
 }
+
+export function SpeakerOffIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+      <path d="M16 9.5l5 5" />
+      <path d="M21 9.5l-5 5" />
+    </Icon>
+  )
+}

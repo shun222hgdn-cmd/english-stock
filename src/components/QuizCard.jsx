@@ -1,4 +1,5 @@
-import SpeakButton from './SpeakButton'
+import { SpeakerIcon, SpeakerOffIcon } from './Icons'
+import { isSpeechSupported } from '../utils/speech'
 import { isLongText } from '../utils/validation'
 
 /**
@@ -7,15 +8,16 @@ import { isLongText } from '../utils/validation'
  * こうすることで、答えを出しても隠しても、問題の位置・カードの大きさ・下のボタンの位置が動かない。
  * カードそのものを押しても、答えの表示・非表示を切り替えられる（紙の単語カードをめくる感覚）。
  *
- * 英語の 🔊（発音）はカードの右上。英語 → 日本語 のときはいつでも、
- * 日本語 → 英語 のときは答えを開いてから押せる（先に答えが聞こえてしまわないように）。
+ * カードの右上の 🔊 は「自動読み上げ」のオン / オフ。オンのときは、英語が出たら自動で読む
+ * （英語 → 日本語 は問題が出たとき、日本語 → 英語 は答えを開いたとき。先に答えが聞こえないように）。
  *
  * @param {{
  *   question: string,        // 問題文
  *   answer: string,          // 解答
  *   questionLang: string,    // 問題文の言語（読み上げ・書体用）
  *   answerLang: string,
- *   english: string,         // 発音する英語
+ *   autoSpeak: boolean,      // 自動読み上げがオンか
+ *   onToggleAutoSpeak: () => void,
  *   showAnswer: boolean,
  *   categoryLabel: string,   // 単語 / フレーズ / 例文（品詞があれば「単語・形容詞」のように）
  *   onToggle: () => void,    // カードを押したとき
@@ -26,13 +28,12 @@ export default function QuizCard({
   answer,
   questionLang,
   answerLang,
-  english,
+  autoSpeak,
+  onToggleAutoSpeak,
   showAnswer,
   categoryLabel,
   onToggle,
 }) {
-  const canSpeak = questionLang === 'en' || (answerLang === 'en' && showAnswer)
-
   return (
     <div className="quiz-card-wrap">
       <button
@@ -62,8 +63,19 @@ export default function QuizCard({
         </span>
       </button>
 
-      {/* 発音ボタン（カードの外の要素として右上に重ねる。ボタンの中にボタンを入れないため） */}
-      {canSpeak && <SpeakButton text={english} className="quiz-speak" />}
+      {/* 自動読み上げのオン / オフ（カードの外の要素として右上に重ねる。ボタンの中にボタンを入れないため） */}
+      {isSpeechSupported() && (
+        <button
+          type="button"
+          className={`icon-btn quiz-speak${autoSpeak ? '' : ' is-off'}`}
+          onClick={onToggleAutoSpeak}
+          aria-pressed={autoSpeak}
+          aria-label={autoSpeak ? '自動読み上げ：オン（押すとオフ）' : '自動読み上げ：オフ（押すとオン）'}
+          title={autoSpeak ? '自動読み上げ：オン' : '自動読み上げ：オフ'}
+        >
+          {autoSpeak ? <SpeakerIcon size={20} /> : <SpeakerOffIcon size={20} />}
+        </button>
+      )}
     </div>
   )
 }
