@@ -9,7 +9,8 @@ import { categoryLabel, categoryWithPos } from '../utils/validation'
 
 /**
  * 暗記（ランダム出題）。取得済みの stocks から選ぶので、出題のたびに通信はしない。
- * 「覚えた」を付けたものは出にくくなる。出題範囲・出題方向は端末に保存し、次も前回の設定で始める。
+ * 「覚えた」を付けたものは出にくくなる。答えはカードを押すと出る。「前の問題」で、さっきの問題に戻れる。
+ * 出題範囲・出題方向は端末に保存し、次も前回の設定で始める。
  *
  * @param {{ stocks: Array<object>, onSetLearned: (id: string, learned: boolean) => Promise<void> }} props
  */
@@ -22,15 +23,28 @@ export default function Quiz({ stocks, onSetLearned }) {
   )
   const [currentId, setCurrentId] = useState(null)
   const [showAnswer, setShowAnswer] = useState(false)
+  const [history, setHistory] = useState([]) // これまでに出した問題の id（「前の問題」で戻る用）
 
   const candidates = useMemo(() => filterByCategory(stocks, quizCategory), [stocks, quizCategory])
   const current = candidates.find((stock) => stock.id === currentId) ?? null
   const learnedCount = candidates.filter((stock) => stock.learned).length
+  // 戻れる問題（削除されたものや、今の出題範囲に無いものは飛ばす）
+  const previousIds = history.filter((id) => candidates.some((stock) => stock.id === id))
 
   /** 直前と同じ問題を避けてランダムに選び、答えを隠す */
   function pickNext(pool = candidates) {
     stopSpeaking()
+    if (current) setHistory((list) => [...list, current.id].slice(-50))
     setCurrentId(pickRandomStock(pool, currentId)?.id ?? null)
+    setShowAnswer(false)
+  }
+
+  /** 前の問題に戻る（答えは隠した状態で） */
+  function goBack() {
+    stopSpeaking()
+    const previousId = previousIds[previousIds.length - 1]
+    setHistory(previousIds.slice(0, -1))
+    setCurrentId(previousId)
     setShowAnswer(false)
   }
 
@@ -47,6 +61,7 @@ export default function Quiz({ stocks, onSetLearned }) {
     setQuizCategory(category)
     saveValue('quizCategory', category)
     pickNext(filterByCategory(stocks, category))
+    setHistory([]) // 範囲を変えたら、戻る先はリセット
   }
 
   // 出題方向を変えても同じ問題のまま、問題と答えを入れ替える
@@ -98,8 +113,13 @@ export default function Quiz({ stocks, onSetLearned }) {
             onToggle={toggleAnswer}
           />
           <div className="quiz-actions">
-            <button type="button" className="btn btn-secondary btn-block btn-large" onClick={toggleAnswer} aria-expanded={showAnswer}>
-              {showAnswer ? '答えを隠す' : '答えを見る'}
+            <button
+              type="button"
+              className="btn btn-secondary btn-block btn-large"
+              onClick={goBack}
+              disabled={previousIds.length === 0}
+            >
+              前の問題
             </button>
             <button type="button" className="btn btn-primary btn-block btn-large" onClick={() => pickNext()}>
               次の問題
