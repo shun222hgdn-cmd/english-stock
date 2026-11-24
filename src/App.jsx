@@ -293,6 +293,18 @@ function MainApp({ userId, email, onSignOut }) {
           exportCount={folderStocks.length}
           canExport={Boolean(currentFolder) && isFolderOpen(currentFolder)}
           onExportCsv={exportCurrentFolderCsv}
+          learnedCount={folderStocks.filter((stock) => stock.learned).length}
+          // 覚えたものをまとめて削除 → 設定を閉じて「元に戻す」を出す
+          onDeleteLearned={async () => {
+            const learned = folderStocks.filter((stock) => stock.learned)
+            await stocksData.removeStocks(learned.map((stock) => stock.id))
+            closeDialog()
+            setUndo({
+              key: Date.now(),
+              message: `覚えた ${learned.length}件を削除しました`,
+              restore: () => stocksData.restoreStocks(learned),
+            })
+          }}
           signingOut={signingOut}
           onOpenPassword={() => setDialog('password')}
           onSignOut={handleSignOut}

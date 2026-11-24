@@ -71,6 +71,13 @@ export const updateStock = (id, input) =>
 
 export const deleteStock = (id) => unwrap(supabase.from('stocks').delete().eq('id', id))
 
+/** まとめて削除する（「覚えたものを削除」用。100件ずつ） */
+export async function deleteStocks(ids) {
+  for (let i = 0; i < ids.length; i += 100) {
+    await unwrap(supabase.from('stocks').delete().in('id', ids.slice(i, i + 100)))
+  }
+}
+
 // ---------- フォルダ ----------
 
 export const fetchFolders = () => unwrap(supabase.from('folders').select(FOLDER_COLUMNS))

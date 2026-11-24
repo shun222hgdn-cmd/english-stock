@@ -80,6 +80,7 @@ export function useStocks(userId) {
     editStock: (id, input) => change(() => api.updateStock(id, input), replace),
     setLearned: (id, learned) => change(() => api.setLearned(id, learned), replace),
     removeStock: (id) => change(() => api.deleteStock(id), (list) => list.filter((stock) => stock.id !== id)),
+    removeStocks: (ids) => change(() => api.deleteStocks(ids), (list) => list.filter((stock) => !ids.includes(stock.id))),
     /** 削除の取り消し（消したデータをそのまま戻す） */
     restoreStocks: (stocks) => change(() => api.restoreStocks(stocks), (list, restored) => [...list, ...restored]),
     /** フォルダを削除したとき、そのフォルダの分を手元からも消す（DB 側は自動で削除済み） */

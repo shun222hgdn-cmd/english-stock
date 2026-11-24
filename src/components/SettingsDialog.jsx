@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import Modal from './Modal'
 import Choice from './Choice'
-import { CheckIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LogoutIcon } from './Icons'
+import { CheckIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LogoutIcon, TrashIcon } from './Icons'
+import { useBusy } from '../hooks/useBusy'
 import { SPEECH_ACCENTS, SPEECH_RATES, isSpeechSupported, loadSpeechSettings, speakEnglish } from '../utils/speech'
 import { saveValue } from '../lib/preferences'
 
@@ -14,6 +15,8 @@ import { saveValue } from '../lib/preferences'
  *   exportCount: number,
  *   canExport: boolean,    // 鍵が閉じているフォルダ・フォルダなしは書き出せない
  *   onExportCsv: () => void,
+ *   learnedCount: number,           // 表示中のフォルダで「覚えた」が付いている件数
+ *   onDeleteLearned: () => Promise<void>,
  *   signingOut: boolean,
  *   onOpenPassword: () => void,
  *   onSignOut: () => void,
@@ -26,12 +29,16 @@ export default function SettingsDialog({
   exportCount,
   canExport,
   onExportCsv,
+  learnedCount,
+  onDeleteLearned,
   signingOut,
   onOpenPassword,
   onSignOut,
   onClose,
 }) {
   const [exported, setExported] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const deleting = useBusy('削除できませんでした。')
   // 発音の設定（この端末に保存）。選ぶとその場で見本を読み上げる
   const [speech, setSpeech] = useState(loadSpeechSettings)
   const speechRef = useRef(speech) // 続けて押しても最新の組み合わせで読む
@@ -76,6 +83,57 @@ export default function SettingsDialog({
               <CheckIcon size={16} />
               <span>書き出しました（ダウンロードフォルダを確認してください）</span>
             </p>
+          )}
+        </li>
+        <li>
+          {confirmingDelete ? (
+            <div className="settings-confirm">
+              <p className="settings-confirm-text">
+                「{folderName}」の覚えた {learnedCount}件を削除します。削除してから8秒間は「元に戻す」で戻せます。
+              </p>
+              <span className="folder-row-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-small"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting.busy}
+                >
+                  やめる
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-small"
+                  onClick={() => deleting.run(onDeleteLearned)}
+                  disabled={deleting.busy}
+                >
+                  {deleting.busy ? '削除中…' : `${learnedCount}件を削除`}
+                </button>
+              </span>
+              {deleting.error && (
+                <p className="field-error" role="alert">
+                  {deleting.error}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="settings-row settings-row-danger"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={!canExport || learnedCount === 0}
+            >
+              <TrashIcon size={18} />
+              <span className="settings-row-label">
+                覚えたものを削除
+                <span className="settings-row-sub">
+                  {!canExport
+                    ? '鍵が閉じているフォルダでは使えません'
+                    : learnedCount === 0
+                      ? `「${folderName}」に覚えたものはありません`
+                      : `「${folderName}」の覚えた ${learnedCount}件`}
+                </span>
+              </span>
+            </button>
           )}
         </li>
         <li className="settings-speech">
