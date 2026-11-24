@@ -531,54 +531,71 @@ button:disabled {
   display: none;
 }
 
-/* ---------- 切り替え（すべて / 単語 / フレーズ など）：下線のタブ ---------- */
+/* ---------- 切り替え（すべて / 単語 / フレーズ / 例文 など）：横幅いっぱいに均等なタブ ---------- */
 .segmented {
-  display: flex;
-  gap: 18px;
-  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .segmented-btn {
   position: relative;
-  min-height: 40px;
-  padding: 6px 0;
+  min-width: 0;
+  min-height: 46px;
+  padding: 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   border: none;
+  border-radius: 6px 6px 0 0;
   background: transparent;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
-.segmented-btn:hover {
+.segmented-btn:hover:not(.is-active) {
   color: var(--ink);
+  background-color: var(--pen-soft);
 }
 
+/* 選択中：青ペンの文字・薄い青の下地・太い下線 */
 .segmented-btn.is-active {
-  color: var(--ink);
+  color: var(--pen);
+  background-color: var(--pen-soft);
   font-weight: 700;
 }
 
-/* 選択中は青ペンの下線 */
 .segmented-btn.is-active::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   bottom: -1px;
-  height: 2px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
   background-color: var(--pen);
 }
 
-/* 単語帳のタブに付ける件数 */
+/* 単語帳のタブの件数：名前の下に小さな札で */
 .segmented-count {
-  margin-left: 5px;
-  color: var(--ink-faint);
+  min-width: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background-color: var(--rule);
+  color: var(--ink-soft);
   font-family: var(--font-en);
-  font-size: 0.85rem;
-  font-weight: 400;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .segmented-btn.is-active .segmented-count {
-  color: var(--pen);
+  background-color: var(--pen);
+  color: var(--on-pen);
 }
 
 /* 登録フォームの 単語 / フレーズ 切り替え */
