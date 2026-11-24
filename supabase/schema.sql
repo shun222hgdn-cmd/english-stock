@@ -44,6 +44,10 @@ create table public.stocks (
     )),
     -- コメント（任意。500文字まで）
     note text check (note is null or char_length(note) <= 500),
+    -- 暗記で「覚えた」を付けたか（覚えたものは出にくくなる）
+    learned boolean not null default false,
+    -- 追加した日時（単語帳の「新しい順」に使う）
+    created_at timestamptz not null default now(),
     -- 自分のフォルダにしか入れられない。フォルダを消すと中身も一緒に消える
     constraint stocks_folder_fkey foreign key (folder_id, user_id)
         references public.folders (id, user_id) on delete cascade

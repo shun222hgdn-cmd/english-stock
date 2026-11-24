@@ -26,6 +26,7 @@ export default function StockCard({ stock, showCategory = false, onOpen }) {
             {showCategory && (
               <span className="stock-category">{categoryLabel(stock.category)}</span>
             )}
+            {stock.learned && <span className="stock-learned">覚えた</span>}
           </span>
           {stock.note && <span className="stock-note">{stock.note}</span>}
         </span>

@@ -6,28 +6,36 @@ import StockDetail from '../components/StockDetail'
 import BulkImportDialog from '../components/BulkImportDialog'
 import Choice from '../components/Choice'
 import { PlusIcon } from '../components/Icons'
-import { filterStocks, groupByInitial, sortByEnglish } from '../utils/search'
+import { filterStocks, groupByInitial, sortByEnglish, sortByNewest } from '../utils/search'
 import { QUIZ_CATEGORIES, filterByCategory } from '../utils/quiz'
+import { loadChoice, saveValue } from '../lib/preferences'
 
 const NOUNS = { all: '単語・フレーズ・例文', word: '単語', phrase: 'フレーズ', sentence: '例文' }
+const SORTS = [
+  { value: 'abc', label: 'ABC順' },
+  { value: 'new', label: '新しい順' },
+]
 
 /**
  * 単語帳（単語・フレーズ・例文を1つの画面で管理する）。
- * 上の切り替え（件数つき）で種類を絞り、右下の ＋ で追加。行を押すと詳細、詳細の「編集」から編集・削除。
+ * 上の切り替え（件数つき）で種類を絞り、ABC順 / 新しい順 で並べ替え、右下の ＋ で追加。
+ * 行を押すと詳細（前へ / 次へで移れる）、詳細の「編集」から編集・削除。
  *
  * @param {{
  *   stocks: Array<object>,                     // 表示中のフォルダのデータ
- *   filter: 'all' | 'word' | 'phrase' | 'sentence',       // 表示の切り替え（画面を移動しても覚えておくため親が持つ）
+ *   filter: 'all' | 'word' | 'phrase' | 'sentence', // 表示の切り替え（画面を移動しても覚えておくため親が持つ）
  *   onFilterChange: (filter: string) => void,
  *   onAdd: (input: object) => Promise<void>,
  *   onEdit: (id: string, input: object) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
+ *   onSetLearned: (id: string, learned: boolean) => Promise<void>,
  *   onAddMany: (items: Array<object>) => Promise<number>, // 追加した件数を返す
  *   folderName: string,
  * }} props
  */
-export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onAddMany, folderName }) {
+export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onSetLearned, onAddMany, folderName }) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [sort, setSort] = useState(() => loadChoice('stockSort', SORTS.map((s) => s.value), 'abc'))
   // 開いている画面：詳細（id で持ち、編集後も最新を表示）・登録/編集フォーム・まとめて追加
   const [detailId, setDetailId] = useState(null)
   const [form, setForm] = useState(null) // null / { mode: 'add' } / { mode: 'edit', stock }
@@ -42,7 +50,22 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
     return result
   }, [stocks])
   const filteredStocks = useMemo(() => filterByCategory(stocks, filter), [stocks, filter])
-  const visibleStocks = useMemo(() => sortByEnglish(filterStocks(filteredStocks, searchQuery)), [filteredStocks, searchQuery])
+  const visibleStocks = useMemo(
+    () => (sort === 'new' ? sortByNewest : sortByEnglish)(filterStocks(filteredStocks, searchQuery)),
+    [filteredStocks, searchQuery, sort],
+  )
+
+  // 詳細の「前へ / 次へ」：今の一覧（絞り込み・検索・並び順そのまま）の中で隣に移る
+  const detailIndex = detailStock ? visibleStocks.findIndex((stock) => stock.id === detailStock.id) : -1
+  const moveDetail = (step) => () => setDetailId(visibleStocks[detailIndex + step].id)
+
+  const renderRows = (items) => (
+    <ul className="ruled-list">
+      {items.map((stock) => (
+        <StockCard key={stock.id} stock={stock} showCategory={filter === 'all'} onOpen={() => setDetailId(stock.id)} />
+      ))}
+    </ul>
+  )
 
   return (
     <section className="page">
@@ -67,13 +90,30 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
 
       <SearchBar value={searchQuery} onChange={setSearchQuery} label={`${noun}を検索`} />
 
-      <p className="result-count" aria-live="polite">
-        {searchQuery.trim() ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
-      </p>
+      {filteredStocks.length > 0 && (
+        <div className="list-tools">
+          <p className="list-count" aria-live="polite">
+            {searchQuery.trim() ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
+          </p>
+          <Choice
+            variant="lang-switch"
+            className="sort-switch"
+            label="並び順"
+            options={SORTS}
+            value={sort}
+            onChange={(value) => {
+              setSort(value)
+              saveValue('stockSort', value)
+            }}
+          />
+        </div>
+      )}
 
       {filteredStocks.length > 0 &&
         (visibleStocks.length === 0 ? (
           <p className="empty-state">「{searchQuery.trim()}」に一致する{noun}はありません。</p>
+        ) : sort === 'new' ? (
+          renderRows(visibleStocks)
         ) : (
           // 辞書のように、頭文字（A〜Z）ごとに見出しを付けて並べる
           <div className="index-list">
@@ -82,11 +122,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
                 <h2 className="index-letter" lang="en">
                   {initial}
                 </h2>
-                <ul className="ruled-list">
-                  {items.map((stock) => (
-                    <StockCard key={stock.id} stock={stock} showCategory={filter === 'all'} onOpen={() => setDetailId(stock.id)} />
-                  ))}
-                </ul>
+                {renderRows(items)}
               </section>
             ))}
           </div>
@@ -100,6 +136,10 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
       {detailStock && !form && (
         <StockDetail
           stock={detailStock}
+          position={detailIndex >= 0 ? { index: detailIndex, total: visibleStocks.length } : undefined}
+          onPrev={detailIndex > 0 ? moveDetail(-1) : undefined}
+          onNext={detailIndex >= 0 && detailIndex < visibleStocks.length - 1 ? moveDetail(1) : undefined}
+          onSetLearned={(learned) => onSetLearned(detailStock.id, learned)}
           onEdit={() => setForm({ mode: 'edit', stock: detailStock })}
           onClose={() => setDetailId(null)}
         />

@@ -1,7 +1,7 @@
 // 一覧画面で使う「検索」と「並び替え」の処理
 
 /**
- * 英語・日本語訳のどちらかに検索文字列を含むデータだけを返す（部分一致）。
+ * 英語・日本語訳・コメントのどれかに検索文字列を含むデータだけを返す（部分一致）。
  * 英語の大文字・小文字は区別しない。検索文字列が空ならすべて返す。
  *
  * @param {Array<{ english: string, japanese: string }>} stocks
@@ -14,7 +14,8 @@ export function filterStocks(stocks, query) {
   return stocks.filter(
     (stock) =>
       stock.english.toLowerCase().includes(keyword) ||
-      stock.japanese.toLowerCase().includes(keyword),
+      stock.japanese.toLowerCase().includes(keyword) ||
+      String(stock.note ?? '').toLowerCase().includes(keyword),
   )
 }
 
@@ -29,6 +30,11 @@ export function sortByEnglish(stocks) {
       a.japanese.localeCompare(b.japanese, 'ja') ||
       String(a.id).localeCompare(String(b.id)),
   )
+}
+
+/** 追加した日時の新しい順に並べた新しい配列を返す（同じ日時ならアルファベット順） */
+export function sortByNewest(stocks) {
+  return sortByEnglish(stocks).sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
 }
 
 /**

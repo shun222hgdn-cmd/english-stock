@@ -21,14 +21,18 @@ export function filterByCategory(stocks, category) {
   return stocks.filter((stock) => stock.category === category)
 }
 
+/** 「覚えた」ものの出やすさ（まだのものを 1 としたときの割合）。0 にはせず、たまに復習で出す */
+export const LEARNED_WEIGHT = 0.2
+
 /**
  * 候補の中からランダムに1件選ぶ。
  * - 候補が0件なら null
  * - 候補が2件以上なら、直前の問題（previousId）を除外して同じ問題が続かないようにする
  * - 候補が1件なら、その問題を繰り返し出題する
+ * - 「覚えた」ものは出にくくする（LEARNED_WEIGHT 倍）
  * 直前の問題は配列の位置ではなくデータの id で判定する。
  *
- * @param {Array<{ id: string }>} candidates 出題候補
+ * @param {Array<{ id: string, learned?: boolean }>} candidates 出題候補
  * @param {string | null} previousId 直前に出題したデータのID
  * @param {() => number} random 0以上1未満の乱数を返す関数（テスト時に差し替えられるよう引数にしている）
  */
@@ -38,9 +42,13 @@ export function pickRandomStock(candidates, previousId = null, random = Math.ran
   const pool =
     candidates.length >= 2 ? candidates.filter((stock) => stock.id !== previousId) : candidates
 
-  const index = Math.floor(random() * pool.length)
-  // 念のため範囲外にならないようにする
-  return pool[Math.min(index, pool.length - 1)]
+  const weightOf = (stock) => (stock.learned ? LEARNED_WEIGHT : 1)
+  let point = random() * pool.reduce((sum, stock) => sum + weightOf(stock), 0)
+  for (const stock of pool) {
+    point -= weightOf(stock)
+    if (point < 0) return stock
+  }
+  return pool[pool.length - 1] // 念のため（端数の誤差）
 }
 
 /**

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import FolderDialog from './components/FolderDialog'
 import PasswordDialog from './components/PasswordDialog'
+import UndoBar from './components/UndoBar'
 import SettingsDialog from './components/SettingsDialog'
 import SetupNotice from './components/SetupNotice'
 import Login from './pages/Login'
@@ -57,6 +58,9 @@ function MainApp({ userId, email, onSignOut }) {
   // この端末で前回選んだフォルダ（無ければ先頭）と、今開いている鍵付きフォルダ（切り替えるか閉じると閉まる）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadValue(`folder:${userId}`))
   const [unlockedFolderId, setUnlockedFolderId] = useState(null)
+  // 削除の直後に出す「元に戻す」（{ key, message, restore } / null）。新しく消したら、そちらに入れ替わる
+  const [undo, setUndo] = useState(null)
+  const clearUndo = useCallback(() => setUndo(null), [])
 
   const stocksData = useStocks(userId)
   const foldersData = useFolders(userId)
@@ -193,7 +197,7 @@ function MainApp({ userId, email, onSignOut }) {
       )
     }
     // key：フォルダを切り替えると検索や出題の状態がリセットされる
-    if (activePage === 'quiz') return <Quiz key={currentFolder.id} stocks={folderStocks} />
+    if (activePage === 'quiz') return <Quiz key={currentFolder.id} stocks={folderStocks} onSetLearned={stocksData.setLearned} />
     return (
       <StockPage
         key={currentFolder.id}
@@ -207,7 +211,13 @@ function MainApp({ userId, email, onSignOut }) {
         onAdd={(input) => stocksData.addStocks(currentFolder.id, [input])}
         onAddMany={(items) => stocksData.addStocks(currentFolder.id, items)}
         onEdit={stocksData.editStock}
-        onDelete={stocksData.removeStock}
+        onSetLearned={stocksData.setLearned}
+        // 消したら数秒だけ「元に戻す」を出す（同じ id・同じ内容で戻す）
+        onDelete={async (id) => {
+          const stock = stocks.find((item) => item.id === id)
+          await stocksData.removeStock(id)
+          setUndo({ key: Date.now(), message: `「${stock.english}」を削除しました`, restore: () => stocksData.restoreStocks([stock]) })
+        }}
         folderName={currentFolder.name}
       />
     )
@@ -241,10 +251,23 @@ function MainApp({ userId, email, onSignOut }) {
           onSelect={selectFolder}
           onAdd={foldersData.addFolder}
           onRename={foldersData.renameFolder}
-          // 削除したら中のデータも手元から消す（データベース側は自動で削除される）
+          // 削除したら中のデータも手元から消す（データベース側は自動で削除される）。
+          // 戻せるように、フォルダと中身を覚えておく
           onDelete={async (folderId) => {
+            const folder = folders.find((item) => item.id === folderId)
+            const contents = filterByFolder(stocks, folderId)
             await foldersData.removeFolder(folderId)
             stocksData.forgetFolderStocks(folderId)
+            let folderBack = false // 途中で失敗してもう一度押したとき、フォルダを二重に戻さない
+            setUndo({
+              key: Date.now(),
+              message: `フォルダ「${folder.name}」を削除しました`,
+              restore: async () => {
+                if (!folderBack) await foldersData.restoreFolder(folder)
+                folderBack = true
+                if (contents.length > 0) await stocksData.restoreStocks(contents)
+              },
+            })
           }}
           isFolderOpen={isFolderOpen}
           onLock={async (folderId, password) => {
@@ -278,6 +301,8 @@ function MainApp({ userId, email, onSignOut }) {
       )}
 
       {dialog === 'password' && <PasswordDialog email={email} onClose={closeDialog} />}
+
+      {undo && <UndoBar key={undo.key} message={undo.message} onUndo={undo.restore} onClose={clearUndo} />}
     </div>
   )
 }

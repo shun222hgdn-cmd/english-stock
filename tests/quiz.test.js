@@ -99,3 +99,21 @@ test('乱数が1に極めて近い値でも範囲外を返さない', () => {
   const picked = pickRandomStock(stocks, null, () => 0.9999999999)
   assert.ok(picked)
 })
+
+test('覚えたものは出にくい（まだ 1 : 覚えた 0.2 の割合で選ぶ）', () => {
+  const pool = [
+    { id: 'a', learned: false },
+    { id: 'b', learned: true },
+  ]
+  // 重みの合計 1.2。0〜1 未満は a、1〜1.2 未満は b
+  assert.equal(pickRandomStock(pool, null, () => 0.8).id, 'a')
+  assert.equal(pickRandomStock(pool, null, () => 0.9).id, 'b')
+})
+
+test('全部覚えていても出題は止まらない', () => {
+  const pool = [
+    { id: 'a', learned: true },
+    { id: 'b', learned: true },
+  ]
+  assert.equal(pickRandomStock(pool, 'a', () => 0.5).id, 'b')
+})

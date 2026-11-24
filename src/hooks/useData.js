@@ -78,7 +78,10 @@ export function useStocks(userId) {
     addStocks: async (folderId, inputs) =>
       (await change(() => api.createStocks(folderId, inputs), (list, created) => [...list, ...created])).length,
     editStock: (id, input) => change(() => api.updateStock(id, input), replace),
+    setLearned: (id, learned) => change(() => api.setLearned(id, learned), replace),
     removeStock: (id) => change(() => api.deleteStock(id), (list) => list.filter((stock) => stock.id !== id)),
+    /** 削除の取り消し（消したデータをそのまま戻す） */
+    restoreStocks: (stocks) => change(() => api.restoreStocks(stocks), (list, restored) => [...list, ...restored]),
     /** フォルダを削除したとき、そのフォルダの分を手元からも消す（DB 側は自動で削除済み） */
     forgetFolderStocks: (folderId) =>
       change(async () => {}, (list) => list.filter((stock) => stock.folder_id !== folderId)),
@@ -97,6 +100,7 @@ export function useFolders(userId) {
     /** 鍵の設定・解除（lockHash が null なら解除） */
     setLock: (id, lockHash) => update(id, { lock_hash: lockHash }),
     removeFolder: (id) => change(() => api.deleteFolder(id), (list) => list.filter((folder) => folder.id !== id)),
+    restoreFolder: (folder) => change(() => api.restoreFolder(folder), (list, restored) => [...list, restored]),
     /** 管理者パスワードで鍵を外す（'ok' のときだけ手元の鍵も外す） */
     clearLockWithAdmin: (id, adminPassword) =>
       change(

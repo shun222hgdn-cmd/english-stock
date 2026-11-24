@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 // どのデータを読み書きできるかはデータベース側の RLS で決まるので、user_id は指定しなくても
 // 「ログイン中のユーザー本人のデータ」だけが対象になる（作成時の user_id も DB の既定値で入る）。
 
-const STOCK_COLUMNS = 'id, folder_id, category, english, japanese, part_of_speech, note'
+const STOCK_COLUMNS = 'id, folder_id, category, english, japanese, part_of_speech, note, learned, created_at'
 const FOLDER_COLUMNS = 'id, name, lock_hash'
 
 /** 通信結果からデータを取り出す（失敗なら例外） */
@@ -37,15 +37,34 @@ export async function fetchAllStocks() {
   }
 }
 
-/** 指定したフォルダに追加する（まとめて追加にも使う。100件ずつ送る） */
-export async function createStocks(folderId, items) {
+/** 行をまとめて保存する（一度に送りすぎないよう100件ずつ） */
+async function insertStocks(rows) {
   const created = []
-  for (let i = 0; i < items.length; i += 100) {
-    const rows = items.slice(i, i + 100).map((item) => ({ folder_id: folderId, ...toStockRow(item) }))
-    created.push(...(await unwrap(supabase.from('stocks').insert(rows).select(STOCK_COLUMNS))))
+  for (let i = 0; i < rows.length; i += 100) {
+    created.push(...(await unwrap(supabase.from('stocks').insert(rows.slice(i, i + 100)).select(STOCK_COLUMNS))))
   }
   return created
 }
+
+/** 指定したフォルダに追加する（まとめて追加にも使う） */
+export const createStocks = (folderId, items) =>
+  insertStocks(items.map((item) => ({ folder_id: folderId, ...toStockRow(item) })))
+
+/** 削除を取り消す：消したデータを同じ id・同じフォルダで元に戻す */
+export const restoreStocks = (stocks) =>
+  insertStocks(
+    stocks.map((stock) => ({
+      id: stock.id,
+      folder_id: stock.folder_id,
+      ...toStockRow(stock),
+      learned: stock.learned ?? false,
+      created_at: stock.created_at, // 追加順の並びも元どおりにする
+    })),
+  )
+
+/** 「覚えた」の印を付ける・外す */
+export const setLearned = (id, learned) =>
+  unwrap(supabase.from('stocks').update({ learned }).eq('id', id).select(STOCK_COLUMNS).single())
 
 export const updateStock = (id, input) =>
   unwrap(supabase.from('stocks').update(toStockRow(input)).eq('id', id).select(STOCK_COLUMNS).single())
@@ -58,6 +77,10 @@ export const fetchFolders = () => unwrap(supabase.from('folders').select(FOLDER_
 
 export const createFolder = (name) =>
   unwrap(supabase.from('folders').insert({ name }).select(FOLDER_COLUMNS).single())
+
+/** 削除を取り消す：フォルダを同じ id・名前・鍵で元に戻す（中身は restoreStocks で戻す） */
+export const restoreFolder = ({ id, name, lock_hash }) =>
+  unwrap(supabase.from('folders').insert({ id, name, lock_hash }).select(FOLDER_COLUMNS).single())
 
 /** 名前や鍵（lock_hash。null で鍵なし）を変更する */
 export const updateFolder = (id, changes) =>

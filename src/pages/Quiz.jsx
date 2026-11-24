@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuizCard from '../components/QuizCard'
 import Choice from '../components/Choice'
+import LearnedButton from '../components/LearnedButton'
 import { QUIZ_CATEGORIES, QUIZ_DIRECTIONS, filterByCategory, getQuestionAndAnswer, pickRandomStock } from '../utils/quiz'
 import { loadChoice, saveValue } from '../lib/preferences'
 import { stopSpeaking } from '../utils/speech'
-import { categoryWithPos } from '../utils/validation'
+import { categoryLabel, categoryWithPos } from '../utils/validation'
 
 /**
  * 暗記（ランダム出題）。取得済みの stocks から選ぶので、出題のたびに通信はしない。
- * 出題範囲・出題方向は端末に保存し、次に開いたときも前回の設定で始める。
+ * 「覚えた」を付けたものは出にくくなる。出題範囲・出題方向は端末に保存し、次も前回の設定で始める。
  *
- * @param {{ stocks: Array<object> }} props
+ * @param {{ stocks: Array<object>, onSetLearned: (id: string, learned: boolean) => Promise<void> }} props
  */
-export default function Quiz({ stocks }) {
+export default function Quiz({ stocks, onSetLearned }) {
   const [quizCategory, setQuizCategory] = useState(() =>
     loadChoice('quizCategory', QUIZ_CATEGORIES.map((c) => c.value), 'all'),
   )
@@ -24,6 +25,7 @@ export default function Quiz({ stocks }) {
 
   const candidates = useMemo(() => filterByCategory(stocks, quizCategory), [stocks, quizCategory])
   const current = candidates.find((stock) => stock.id === currentId) ?? null
+  const learnedCount = candidates.filter((stock) => stock.learned).length
 
   /** 直前と同じ問題を避けてランダムに選び、答えを隠す */
   function pickNext(pool = candidates) {
@@ -73,8 +75,19 @@ export default function Quiz({ stocks }) {
 
       <Choice label="出題範囲" options={QUIZ_CATEGORIES} value={quizCategory} onChange={changeCategory} />
 
+      {candidates.length === 0 && (
+        <p className="empty-state">
+          まだ{quizCategory === 'all' ? '単語・フレーズ・例文' : categoryLabel(quizCategory)}がありません。
+          <br />
+          単語帳の ＋ から追加すると、ここで出題されます。
+        </p>
+      )}
+
       {current && (
         <>
+          <p className="quiz-progress">
+            覚えた {learnedCount} / {candidates.length}
+          </p>
           <QuizCard
             {...getQuestionAndAnswer(current, quizDirection)}
             questionLang={isJaToEn ? 'ja' : 'en'}
@@ -92,6 +105,13 @@ export default function Quiz({ stocks }) {
               次の問題
             </button>
           </div>
+          {/* key：問題が変わったら、前の問題のエラー表示などを持ち越さない */}
+          <LearnedButton
+            key={current.id}
+            className="quiz-learned"
+            learned={Boolean(current.learned)}
+            onChange={(learned) => onSetLearned(current.id, learned)}
+          />
           {/* コメント：答えを開いているときだけ、ボタンの下に出す（上の位置は動かない） */}
           {showAnswer && current.note && (
             <section className="quiz-comment" aria-label="コメント">
