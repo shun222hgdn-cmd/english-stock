@@ -21,13 +21,34 @@ export function cleanStockInput(input) {
   }
 }
 
+/** 種類（データベースの制約と同じ） */
+export const CATEGORIES = [
+  { value: 'word', label: '単語' },
+  { value: 'phrase', label: 'フレーズ' },
+  { value: 'sentence', label: '例文' },
+]
+
+/** 種類の表示名（単語 / フレーズ / 例文） */
+export const categoryLabel = (value) => CATEGORIES.find((c) => c.value === value)?.label ?? value
+
+/** 「単語・形容詞」のように、品詞があれば付けた表示名 */
+export const categoryWithPos = (stock) =>
+  [categoryLabel(stock.category), stock.category === 'word' && stock.part_of_speech].filter(Boolean).join('・')
+
 /**
- * 英語の内容から種類を推測する（登録フォームの自動切り替え用）。
- * 前後の空白を除いてスペースを含めば phrase（例：It depends on the situation.）、含まなければ word（例：Ambiguous）。
+ * 英語の内容から種類を推測する（登録フォーム・まとめて追加の自動判定用）。
+ * - スペースなし → 単語（例：Ambiguous）
+ * - 3語以上で . ? ! で終わる → 例文（例：It depends on the situation.）
+ * - それ以外 → フレーズ（例：take off / Thank you.）
  */
 export function guessCategory(english) {
-  return /\s/.test(String(english ?? '').trim()) ? 'phrase' : 'word'
+  const text = String(english ?? '').trim()
+  if (!/\s/.test(text)) return 'word'
+  return /[.?!]["')\]]?$/.test(text) && text.split(/\s+/).length >= 3 ? 'sentence' : 'phrase'
 }
+
+/** 長い文（例文など）か。カードや詳細で文字を少し小さくする目安 */
+export const isLongText = (text) => [...String(text ?? '')].length > 40
 
 /**
  * 同じ英語（大文字・小文字と前後の空白は無視）がすでに登録されていれば、そのデータを返す。

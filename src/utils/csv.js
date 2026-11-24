@@ -1,12 +1,11 @@
-// フォルダの単語・フレーズを CSV にする処理（画面に依存しない純粋な関数なので、自動テストしやすい）
+// フォルダの単語・フレーズ・例文を CSV にする処理（画面に依存しない純粋な関数なので、自動テストしやすい）
 // Excel で開いても文字化けしないよう、先頭に BOM を付け、改行は CRLF にする。
 
 import { sortByEnglish } from './search.js'
+import { CATEGORIES, categoryLabel } from './validation.js'
 
 /** 1行目の見出し */
 export const CSV_HEADERS = ['種類', '英語', '日本語訳', '品詞', 'コメント']
-
-const CATEGORY_LABELS = { word: '単語', phrase: 'フレーズ' }
 
 /**
  * 1つの値を CSV のセルにする。
@@ -22,15 +21,14 @@ export function toCsvCell(value) {
 
 /**
  * 登録データを CSV の文字列にする（BOM 付き・CRLF）。
- * 単語を先、フレーズを後にして、それぞれ英語のアルファベット順に並べる。
+ * 単語 → フレーズ → 例文 の順に、それぞれ英語のアルファベット順に並べる。
  *
  * @param {Array<{ category: string, english: string, japanese: string, part_of_speech?: string|null, note?: string|null }>} stocks
  */
 export function buildStocksCsv(stocks) {
-  const words = sortByEnglish(stocks.filter((stock) => stock.category === 'word'))
-  const phrases = sortByEnglish(stocks.filter((stock) => stock.category === 'phrase'))
-  const rows = [...words, ...phrases].map((stock) => [
-    CATEGORY_LABELS[stock.category] ?? stock.category,
+  const ordered = CATEGORIES.flatMap(({ value }) => sortByEnglish(stocks.filter((stock) => stock.category === value)))
+  const rows = ordered.map((stock) => [
+    categoryLabel(stock.category),
     stock.english,
     stock.japanese,
     stock.part_of_speech ?? '',

@@ -3,17 +3,21 @@ import Modal from './Modal'
 import Choice from './Choice'
 import AutoTextarea from './AutoTextarea'
 import { CheckIcon, CloseIcon } from './Icons'
-import { NOTE_MAX_LENGTH, PARTS_OF_SPEECH, cleanStockExtras, cleanStockInput, findDuplicate, guessCategory } from '../utils/validation'
+import {
+  CATEGORIES,
+  NOTE_MAX_LENGTH,
+  PARTS_OF_SPEECH,
+  categoryLabel,
+  cleanStockExtras,
+  cleanStockInput,
+  findDuplicate,
+  guessCategory,
+} from '../utils/validation'
 import { useBusy } from '../hooks/useBusy'
 
-const CATEGORIES = [
-  { value: 'word', label: '単語' },
-  { value: 'phrase', label: 'フレーズ' },
-]
-
 /**
- * 登録・編集フォーム。英語・日本語訳・種類（単語 / フレーズ）、任意で品詞（単語のみ）とコメント。
- * - 種類を手で選ぶまでは、英語にスペースがあればフレーズ、なければ単語に自動で切り替える
+ * 登録・編集フォーム。英語・日本語訳・種類（単語 / フレーズ / 例文）、任意で品詞（単語のみ）とコメント。
+ * - 種類を手で選ぶまでは、英語の内容から自動で切り替える（utils/validation.js の guessCategory）
  * - 英語で Enter → 日本語へ、日本語で Enter → 保存（Shift + Enter は改行、変換確定の Enter は無視）
  * - 「保存して次へ」（Ctrl + Enter）で続けて登録できる
  * - 同じ英語が登録済みなら注意を出す（登録はできる）
@@ -22,7 +26,7 @@ const CATEGORIES = [
  * @param {{
  *   mode: 'add' | 'edit',
  *   initialValues?: { id: string, category: string, english: string, japanese: string, part_of_speech?: string, note?: string },
- *   defaultCategory?: 'word' | 'phrase' | null, // 追加時の種類（null なら自動判定）
+ *   defaultCategory?: 'word' | 'phrase' | 'sentence' | null, // 追加時の種類（null なら自動判定）
  *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じフォルダ）
  *   onSubmit: (values: object) => Promise<void>,
  *   onDelete?: () => Promise<void>,  // 編集時だけ
@@ -95,7 +99,7 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
 
   return (
     <Modal
-      title={`${category === 'word' ? '単語' : 'フレーズ'}を${isAdd ? '追加' : '編集'}`}
+      title={`${categoryLabel(category)}を${isAdd ? '追加' : '編集'}`}
       onClose={onClose}
       busy={saving}
       closeOnBackdrop={isEmpty}

@@ -9,15 +9,15 @@ import { PlusIcon } from '../components/Icons'
 import { filterStocks, groupByInitial, sortByEnglish } from '../utils/search'
 import { QUIZ_CATEGORIES, filterByCategory } from '../utils/quiz'
 
-const NOUNS = { all: '単語・フレーズ', word: '単語', phrase: 'フレーズ' }
+const NOUNS = { all: '単語・フレーズ・例文', word: '単語', phrase: 'フレーズ', sentence: '例文' }
 
 /**
- * 単語帳（単語とフレーズを1つの画面で管理する）。
+ * 単語帳（単語・フレーズ・例文を1つの画面で管理する）。
  * 上の切り替え（件数つき）で種類を絞り、右下の ＋ で追加。行を押すと詳細、詳細の「編集」から編集・削除。
  *
  * @param {{
  *   stocks: Array<object>,                     // 表示中のフォルダのデータ
- *   filter: 'all' | 'word' | 'phrase',         // 表示の切り替え（画面を移動しても覚えておくため親が持つ）
+ *   filter: 'all' | 'word' | 'phrase' | 'sentence',       // 表示の切り替え（画面を移動しても覚えておくため親が持つ）
  *   onFilterChange: (filter: string) => void,
  *   onAdd: (input: object) => Promise<void>,
  *   onEdit: (id: string, input: object) => Promise<void>,
@@ -37,7 +37,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const detailStock = detailId && stocks.find((stock) => stock.id === detailId)
 
   const counts = useMemo(() => {
-    const result = { all: stocks.length, word: 0, phrase: 0 }
+    const result = { all: stocks.length, word: 0, phrase: 0, sentence: 0 }
     for (const stock of stocks) result[stock.category] += 1
     return result
   }, [stocks])
@@ -109,7 +109,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
         <StockForm
           mode={form.mode}
           initialValues={form.stock}
-          // 追加時の種類：単語 / フレーズ 表示中はその種類、「すべて」なら英語の内容から自動判定
+          // 追加時の種類：単語 / フレーズ / 例文 表示中はその種類、「すべて」なら英語の内容から自動判定
           defaultCategory={filter === 'all' ? null : filter}
           existingStocks={stocks}
           onSubmit={(values) => (form.stock ? onEdit(form.stock.id, values) : onAdd(values))}

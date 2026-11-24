@@ -1,11 +1,9 @@
+import { CATEGORIES } from './validation.js'
+
 // ランダム出題に関する処理（画面に依存しない純粋な関数なので、自動テストしやすい）
 
 /** 出題範囲 */
-export const QUIZ_CATEGORIES = [
-  { value: 'all', label: 'すべて' },
-  { value: 'word', label: '単語' },
-  { value: 'phrase', label: 'フレーズ' },
-]
+export const QUIZ_CATEGORIES = [{ value: 'all', label: 'すべて' }, ...CATEGORIES]
 
 /** 出題方向（ja-en: 日本語 → 英語 / en-ja: 英語 → 日本語） */
 export const QUIZ_DIRECTIONS = [
@@ -16,7 +14,7 @@ export const QUIZ_DIRECTIONS = [
 /**
  * 出題範囲でデータを絞り込む。
  * @param {Array<{ category: string }>} stocks
- * @param {'all' | 'word' | 'phrase'} category
+ * @param {'all' | 'word' | 'phrase' | 'sentence'} category
  */
 export function filterByCategory(stocks, category) {
   if (category === 'all') return stocks

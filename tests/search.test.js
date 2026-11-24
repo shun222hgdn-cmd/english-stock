@@ -4,6 +4,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { filterStocks, groupByInitial, sortByEnglish } from '../src/utils/search.js'
 import {
+  categoryLabel,
+  categoryWithPos,
+  isLongText,
   cleanStockExtras,
   cleanStockInput,
   findDuplicate,
@@ -111,12 +114,27 @@ test('重複チェック：部分一致や空欄は重複扱いしない', () =>
   assert.equal(findDuplicate(stocks, '   '), null)
 })
 
-test('種類の自動判定：スペースを含めばフレーズ、含まなければ単語', () => {
+test('種類の自動判定：スペースなしは単語、3語以上で . ? ! で終われば例文、それ以外はフレーズ', () => {
   assert.equal(guessCategory('Ambiguous'), 'word')
   assert.equal(guessCategory('  Ambiguous  '), 'word') // 前後の空白は無視
-  assert.equal(guessCategory('It depends on the situation.'), 'phrase')
-  assert.equal(guessCategory('take off'), 'phrase')
   assert.equal(guessCategory(''), 'word')
+  assert.equal(guessCategory('take off'), 'phrase')
+  assert.equal(guessCategory('break the ice'), 'phrase') // 句読点なし
+  assert.equal(guessCategory('Thank you.'), 'phrase') // 2語は短いのでフレーズ
+  assert.equal(guessCategory('It depends on the situation.'), 'sentence')
+  assert.equal(guessCategory('Could you say that again?'), 'sentence')
+  assert.equal(guessCategory('He said, "Let\'s go!"'), 'sentence') // 引用符で終わっても文
+})
+
+test('種類の表示名と、品詞つきの表示', () => {
+  assert.equal(categoryLabel('sentence'), '例文')
+  assert.equal(categoryWithPos({ category: 'word', part_of_speech: '形容詞' }), '単語・形容詞')
+  assert.equal(categoryWithPos({ category: 'sentence', part_of_speech: '名詞' }), '例文') // 品詞は単語だけ
+})
+
+test('長い文の判定（40文字を超えたら小さめの文字にする）', () => {
+  assert.equal(isLongText('Ambiguous'), false)
+  assert.equal(isLongText('I would appreciate it if you could reply soon.'), true)
 })
 
 test('パスワード変更：8文字以上で、確認用と一致すれば OK', () => {

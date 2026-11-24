@@ -9,7 +9,15 @@ const stocks = [
   { id: 'w2', category: 'word', english: 'Efficient', japanese: '効率的な' },
   { id: 'p1', category: 'phrase', english: 'It depends on the situation.', japanese: '状況によります。' },
   { id: 'p2', category: 'phrase', english: "I'll keep that in mind.", japanese: '覚えておきます。' },
+  { id: 's1', category: 'sentence', english: 'See you tomorrow.', japanese: 'また明日。' },
 ]
+
+test('例文のみを選ぶと例文だけが対象になる', () => {
+  assert.deepEqual(
+    filterByCategory(stocks, 'sentence').map((s) => s.id),
+    ['s1'],
+  )
+})
 
 test('T14: 英単語のみを選ぶと英単語だけが対象になる', () => {
   const result = filterByCategory(stocks, 'word')
@@ -27,8 +35,8 @@ test('T15: フレーズのみを選ぶとフレーズだけが対象になる', 
   )
 })
 
-test('T16: すべてを選ぶと両カテゴリーが対象になる', () => {
-  assert.equal(filterByCategory(stocks, 'all').length, 4)
+test('T16: すべてを選ぶと全種類が対象になる', () => {
+  assert.equal(filterByCategory(stocks, 'all').length, 5)
 })
 
 test('T17: 日本語→英語では日本語が問題・英語が答えになる', () => {

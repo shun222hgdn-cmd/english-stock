@@ -26,7 +26,7 @@ export default function FolderSetup({ onCreate }) {
           <FolderIcon size={28} />
         </p>
         <p>
-          単語・フレーズはフォルダに保存します。
+          単語・フレーズ・例文はフォルダに保存します。
           <br />
           使う人ごとにフォルダを分けられます。
         </p>

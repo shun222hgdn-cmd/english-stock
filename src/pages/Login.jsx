@@ -47,7 +47,7 @@ export default function Login({ onSignIn }) {
           <LogoIcon size={26} />
           <span>English Stock</span>
         </p>
-        <h1 className="login-lead">英単語・フレーズのストック</h1>
+        <h1 className="login-lead">英単語・フレーズ・例文のストック</h1>
 
         <form className="card login-card" onSubmit={handleSubmit} noValidate>
           {field('login-id', 'ID', loginId, setLoginId, {

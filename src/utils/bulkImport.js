@@ -1,4 +1,4 @@
-// 「まとめて追加」：貼り付けた文章から、単語・フレーズを読み取る処理
+// 「まとめて追加」：貼り付けた文章から、単語・フレーズ・例文を読み取る処理
 // （画面に依存しない純粋な関数なので、自動テストしやすい）
 //
 // 読み取れる形式
@@ -16,17 +16,18 @@ export const BULK_MAX_ROWS = 300
 /** 英語・日本語訳の最大文字数 */
 const TEXT_MAX_LENGTH = 500
 
-const CATEGORY_FROM_LABEL = { 単語: 'word', フレーズ: 'phrase', word: 'word', phrase: 'phrase' }
+const CATEGORY_FROM_LABEL = { 単語: 'word', フレーズ: 'phrase', 例文: 'sentence', word: 'word', phrase: 'phrase', sentence: 'sentence' }
 
 /** ChatGPT に貼り付けてもらう「頼む文」 */
-export const CHATGPT_PROMPT = `次の英単語・英語フレーズを、English Stock に取り込める形にしてください。
+export const CHATGPT_PROMPT = `次の英単語・英語フレーズ・例文を、English Stock に取り込める形にしてください。
 ・1行に1つ、「英語 | 日本語訳 | 品詞 | コメント」の形で書く
 ・日本語訳は自然で短く
-・品詞は単語のときだけ、名詞・代名詞・動詞・形容詞・副詞・助動詞・前置詞・冠詞・接続詞・間投詞 から1つ（フレーズや迷うときは空欄）
+・品詞は単語のときだけ、名詞・代名詞・動詞・形容詞・副詞・助動詞・前置詞・冠詞・接続詞・間投詞 から1つ（フレーズ・例文や迷うときは空欄）
+・例文は文の終わりに . ? ! を付ける
 ・コメントは必要なときだけ（例文は入れない）
 ・見出しや説明は書かず、コードブロックの中に結果だけを書く
 
-（ここに単語・フレーズを書く）`
+（ここに単語・フレーズ・例文を書く）`
 
 /** 書き出し時に付けた「数式よけ」の ' を外す（'=SUM → =SUM） */
 const unguard = (value) => (/^'[=+\-@]/.test(value) ? value.slice(1) : value)

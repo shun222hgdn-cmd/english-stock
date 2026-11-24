@@ -1,4 +1,5 @@
 import SpeakButton from './SpeakButton'
+import { isLongText } from '../utils/validation'
 
 /**
  * ランダム出題の単語カード。
@@ -16,7 +17,7 @@ import SpeakButton from './SpeakButton'
  *   answerLang: string,
  *   english: string,         // 発音する英語
  *   showAnswer: boolean,
- *   categoryLabel: string,   // 単語 / フレーズ（品詞があれば「単語・形容詞」のように）
+ *   categoryLabel: string,   // 単語 / フレーズ / 例文（品詞があれば「単語・形容詞」のように）
  *   onToggle: () => void,    // カードを押したとき
  * }} props
  */
@@ -45,7 +46,7 @@ export default function QuizCard({
 
         {/* 問題の欄（高さ固定・この中で上下中央） */}
         <span className="quiz-q-area">
-          <span className="quiz-question" lang={questionLang}>
+          <span className={`quiz-question${isLongText(question) ? ' is-long' : ''}`} lang={questionLang}>
             {question}
           </span>
         </span>
@@ -54,7 +55,7 @@ export default function QuizCard({
         <span className="quiz-a-area" aria-live="polite">
           <span className="quiz-a-label">答え</span>
           {showAnswer && (
-            <span className="quiz-answer" lang={answerLang}>
+            <span className={`quiz-answer${isLongText(answer) ? ' is-long' : ''}`} lang={answerLang}>
               {answer}
             </span>
           )}

@@ -17,6 +17,7 @@ import { loadChoice, loadValue, saveValue } from './lib/preferences'
 import { toDisplayId } from './utils/loginId'
 import { hashFolderPassword, verifyFolderPassword } from './utils/folderLock'
 import { buildCsvFileName, buildStocksCsv } from './utils/csv'
+import { QUIZ_CATEGORIES } from './utils/quiz'
 import { filterByFolder, pickCurrentFolder } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
 
@@ -48,8 +49,8 @@ function AuthGate() {
  */
 function MainApp({ userId, email, onSignOut }) {
   const [activePage, setActivePage] = useState('stock') // 'stock'：単語帳 / 'quiz'：暗記
-  // 単語帳の表示切り替え（すべて / 単語 / フレーズ）。端末に保存して、開き直しても前回の表示で始める
-  const [stockFilter, setStockFilter] = useState(() => loadChoice('stockFilter', ['all', 'word', 'phrase'], 'all'))
+  // 単語帳の表示切り替え（すべて / 単語 / フレーズ / 例文）。端末に保存して、開き直しても前回の表示で始める
+  const [stockFilter, setStockFilter] = useState(() => loadChoice('stockFilter', QUIZ_CATEGORIES.map((c) => c.value), 'all'))
   const [dialog, setDialog] = useState(null) // 'folders' / 'settings' / 'password'
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')

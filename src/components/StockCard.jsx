@@ -1,4 +1,5 @@
 import SpeakButton from './SpeakButton'
+import { categoryLabel } from '../utils/validation'
 
 /**
  * 一覧の1件分の行。英語を上、日本語訳を下に表示する。行を押すと詳細が開く。
@@ -6,7 +7,7 @@ import SpeakButton from './SpeakButton'
  *
  * @param {{
  *   stock: { category: string, english: string, japanese: string, part_of_speech?: string, note?: string },
- *   showCategory?: boolean,   // true のとき 単語 / フレーズ を小さく表示（「すべて」表示用）
+ *   showCategory?: boolean,   // true のとき 単語 / フレーズ / 例文 を小さく表示（「すべて」表示用）
  *   onOpen: () => void,   // 詳細を開く
  * }} props
  */
@@ -23,7 +24,7 @@ export default function StockCard({ stock, showCategory = false, onOpen }) {
             {/* 品詞（設定されていれば）と、「すべて」表示のときの種類 */}
             {stock.part_of_speech && <span className="stock-category">{stock.part_of_speech}</span>}
             {showCategory && (
-              <span className="stock-category">{stock.category === 'word' ? '単語' : 'フレーズ'}</span>
+              <span className="stock-category">{categoryLabel(stock.category)}</span>
             )}
           </span>
           {stock.note && <span className="stock-note">{stock.note}</span>}

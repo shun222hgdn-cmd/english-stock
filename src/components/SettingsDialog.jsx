@@ -64,7 +64,7 @@ export default function SettingsDialog({
               CSVで書き出す
               <span className="settings-row-sub">
                 {canExport
-                  ? `「${folderName}」の単語・フレーズ ${exportCount}件`
+                  ? `「${folderName}」の ${exportCount}件`
                   : folderName
                     ? `「${folderName}」は鍵が閉じているため書き出せません`
                     : 'フォルダがありません'}

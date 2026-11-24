@@ -2,9 +2,10 @@ import { useId } from 'react'
 import Modal, { CloseButton } from './Modal'
 import SpeakButton from './SpeakButton'
 import { PencilIcon } from './Icons'
+import { categoryLabel, isLongText } from '../utils/validation'
 
 /**
- * 単語・フレーズの詳細（一覧の行を押すと開く）。英語を大きく、日本語訳・品詞・コメントを省略せずに表示し、
+ * 単語・フレーズ・例文の詳細（一覧の行を押すと開く）。英語を大きく、日本語訳・品詞・コメントを省略せずに表示し、
  * 右上の「編集」から編集画面に進む（いきなり編集画面にならないので、見るだけのときに安心）。
  *
  * @param {{ stock: object, onEdit: () => void, onClose: () => void }} props
@@ -15,7 +16,7 @@ export default function StockDetail({ stock, onEdit, onClose }) {
   const header = (
     <div className="modal-header">
       <p className="detail-kind">
-        {stock.category === 'word' ? '単語' : 'フレーズ'}
+        {categoryLabel(stock.category)}
         {stock.part_of_speech && <span className="detail-pos">{stock.part_of_speech}</span>}
       </p>
       <span className="detail-header-actions">
@@ -31,7 +32,7 @@ export default function StockDetail({ stock, onEdit, onClose }) {
   return (
     <Modal header={header} labelId={titleId} onClose={onClose} className="modal-form stock-detail">
       <div className="detail-english-row">
-        <h2 id={titleId} className="detail-english" lang="en">
+        <h2 id={titleId} className={`detail-english${isLongText(stock.english) ? ' is-long' : ''}`} lang="en">
           {stock.english}
         </h2>
         <SpeakButton text={stock.english} />

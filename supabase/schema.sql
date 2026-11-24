@@ -5,7 +5,7 @@
 --
 -- 中身
 --   1. folders：フォルダ（1つのアカウントを複数人で使い分ける。例：しゅん / ソヒ）
---   2. stocks ：英単語・フレーズ
+--   2. stocks ：英単語・フレーズ・例文
 --   3. RLS    ：ログイン中の本人のデータだけ読み書きできる（未ログインは一切不可）
 --   4. 管理者パスワード：ログイン用パスワードの変更と、フォルダの鍵の解除に使う
 -- =========================================================
@@ -28,13 +28,14 @@ create table public.folders (
 );
 
 -- ---------------------------------------------------------
--- 2. 英単語・フレーズ
+-- 2. 英単語・フレーズ・例文
 -- ---------------------------------------------------------
 create table public.stocks (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
     folder_id uuid not null,
-    category text not null check (category in ('word', 'phrase')),
+    -- 種類：word（単語） / phrase（フレーズ） / sentence（例文）
+    category text not null constraint stocks_category_check check (category in ('word', 'phrase', 'sentence')),
     english text not null check (length(btrim(english)) > 0),
     japanese text not null check (length(btrim(japanese)) > 0),
     -- 品詞（任意。単語のときだけ使う）

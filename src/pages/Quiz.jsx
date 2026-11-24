@@ -4,6 +4,7 @@ import Choice from '../components/Choice'
 import { QUIZ_CATEGORIES, QUIZ_DIRECTIONS, filterByCategory, getQuestionAndAnswer, pickRandomStock } from '../utils/quiz'
 import { loadChoice, saveValue } from '../lib/preferences'
 import { stopSpeaking } from '../utils/speech'
+import { categoryWithPos } from '../utils/validation'
 
 /**
  * 暗記（ランダム出題）。取得済みの stocks から選ぶので、出題のたびに通信はしない。
@@ -80,7 +81,7 @@ export default function Quiz({ stocks }) {
             answerLang={isJaToEn ? 'en' : 'ja'}
             english={current.english}
             showAnswer={showAnswer}
-            categoryLabel={current.category === 'word' ? ['単語', current.part_of_speech].filter(Boolean).join('・') : 'フレーズ'}
+            categoryLabel={categoryWithPos(current)}
             onToggle={toggleAnswer}
           />
           <div className="quiz-actions">

@@ -3,6 +3,7 @@ import Modal from './Modal'
 import { CheckIcon } from './Icons'
 import { CHATGPT_PROMPT, BULK_MAX_ROWS, markDuplicates, parseBulkText } from '../utils/bulkImport'
 import { useBusy } from '../hooks/useBusy'
+import { categoryLabel } from '../utils/validation'
 
 /**
  * 「まとめて追加」：ChatGPT などで作ったリストを貼り付けて、一度に追加する（文章をコピー＆貼り付けするだけ）。
@@ -85,7 +86,7 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
                   'ChatGPTに頼む文をコピー'
                 )}
               </button>
-              <span className="bulk-step-text">ChatGPT に貼り、最後に単語・フレーズを書いて送る</span>
+              <span className="bulk-step-text">ChatGPT に貼り、最後に単語・フレーズ・例文を書いて送る</span>
             </li>
             <li>
               <span className="bulk-step-text">ChatGPT の答え（リスト）をコピーして、下に貼り付ける</span>
@@ -107,7 +108,7 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
             data-autofocus=""
           />
           <p className="muted bulk-format">
-            1行に1件「英語 | 日本語訳 | 品詞 | コメント」（品詞・コメントは省略可）。表やタブ区切り、このアプリで書き出した CSV もそのまま貼れます。{BULK_MAX_ROWS}件まで。
+            1行に1件「英語 | 日本語訳 | 品詞 | コメント」（品詞・コメントは省略可）。種類は自動で判定（3語以上で . ? ! で終われば例文）。表やタブ区切り、このアプリで書き出した CSV もそのまま貼れます。{BULK_MAX_ROWS}件まで。
           </p>
           {errorBox}
           <button type="button" className="btn btn-primary btn-block" onClick={readText}>
@@ -132,7 +133,7 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
                 </span>
                 <span className="bulk-preview-ja">
                   {row.japanese}
-                  <span className="stock-category">{row.category === 'word' ? '単語' : 'フレーズ'}</span>
+                  <span className="stock-category">{categoryLabel(row.category)}</span>
                   {row.part_of_speech && <span className="stock-category">{row.part_of_speech}</span>}
                   {row.duplicate && <span className="bulk-skip-tag">登録済みのため追加しない</span>}
                 </span>
