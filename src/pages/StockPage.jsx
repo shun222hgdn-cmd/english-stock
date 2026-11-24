@@ -6,19 +6,15 @@ import StockDetail from '../components/StockDetail'
 import BulkImportDialog from '../components/BulkImportDialog'
 import Choice from '../components/Choice'
 import { PlusIcon } from '../components/Icons'
-import { filterStocks, groupByInitial, sortByEnglish, sortByNewest } from '../utils/search'
+import { SORTS, filterStocks, groupByInitial, sortStocks } from '../utils/search'
 import { QUIZ_CATEGORIES, filterByCategory } from '../utils/quiz'
 import { loadChoice, saveValue } from '../lib/preferences'
 
 const NOUNS = { all: '単語・フレーズ・例文', word: '単語', phrase: 'フレーズ', sentence: '例文' }
-const SORTS = [
-  { value: 'abc', label: 'ABC順' },
-  { value: 'new', label: '新しい順' },
-]
 
 /**
  * 単語帳（単語・フレーズ・例文を1つの画面で管理する）。
- * 上の切り替え（件数つき）で種類を絞り、ABC順 / 新しい順 で並べ替え、右下の ＋ で追加。
+ * 上の切り替え（件数つき）で種類を絞り、プルダウンで並べ替え（ABC順・新しい順・古い順・覚えたが上・まだが上）、右下の ＋ で追加。
  * 行を押すと詳細（前へ / 次へで移れる）、詳細の「編集」から編集・削除。
  *
  * @param {{
@@ -51,7 +47,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   }, [stocks])
   const filteredStocks = useMemo(() => filterByCategory(stocks, filter), [stocks, filter])
   const visibleStocks = useMemo(
-    () => (sort === 'new' ? sortByNewest : sortByEnglish)(filterStocks(filteredStocks, searchQuery)),
+    () => sortStocks(filterStocks(filteredStocks, searchQuery), sort),
     [filteredStocks, searchQuery, sort],
   )
 
@@ -95,24 +91,28 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
           <p className="list-count" aria-live="polite">
             {searchQuery.trim() ? `${visibleStocks.length} / ${filteredStocks.length} 件` : ''}
           </p>
-          <Choice
-            variant="lang-switch"
-            className="sort-switch"
-            label="並び順"
-            options={SORTS}
+          <select
+            className="sort-select"
             value={sort}
-            onChange={(value) => {
-              setSort(value)
-              saveValue('stockSort', value)
+            onChange={(e) => {
+              setSort(e.target.value)
+              saveValue('stockSort', e.target.value)
             }}
-          />
+            aria-label="並び順"
+          >
+            {SORTS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
       {filteredStocks.length > 0 &&
         (visibleStocks.length === 0 ? (
           <p className="empty-state">「{searchQuery.trim()}」に一致する{noun}はありません。</p>
-        ) : sort === 'new' ? (
+        ) : sort !== 'abc' ? (
           renderRows(visibleStocks)
         ) : (
           // 辞書のように、頭文字（A〜Z）ごとに見出しを付けて並べる

@@ -2,7 +2,7 @@
 // 実行方法: npm test
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { filterStocks, groupByInitial, sortByEnglish, sortByNewest } from '../src/utils/search.js'
+import { filterStocks, groupByInitial, sortByEnglish, sortStocks } from '../src/utils/search.js'
 import {
   categoryLabel,
   categoryWithPos,
@@ -210,5 +210,17 @@ test('新しい順：追加日時の新しいものが先、同じ日時なら�
     { id: '2', english: 'Gamma', japanese: 'g', created_at: '2026-11-20T00:00:00Z' },
     { id: '3', english: 'Alpha', japanese: 'a', created_at: '2026-11-01T00:00:00Z' },
   ]
-  assert.deepEqual(sortByNewest(list).map((s) => s.english), ['Gamma', 'Alpha', 'Beta'])
+  assert.deepEqual(sortStocks(list, 'new').map((s) => s.english), ['Gamma', 'Alpha', 'Beta'])
+})
+
+test('古い順・覚えたが上・まだが上（同じ順位どうしはアルファベット順）', () => {
+  const list = [
+    { id: '1', english: 'Beta', japanese: 'b', created_at: '2026-11-01T00:00:00Z', learned: true },
+    { id: '2', english: 'Gamma', japanese: 'g', created_at: '2026-11-20T00:00:00Z', learned: false },
+    { id: '3', english: 'Alpha', japanese: 'a', created_at: '2026-11-05T00:00:00Z', learned: false },
+  ]
+  assert.deepEqual(sortStocks(list, 'old').map((s) => s.english), ['Beta', 'Alpha', 'Gamma'])
+  assert.deepEqual(sortStocks(list, 'learned').map((s) => s.english), ['Beta', 'Alpha', 'Gamma'])
+  assert.deepEqual(sortStocks(list, 'unlearned').map((s) => s.english), ['Alpha', 'Gamma', 'Beta'])
+  assert.deepEqual(sortStocks(list, 'abc').map((s) => s.english), ['Alpha', 'Beta', 'Gamma'])
 })

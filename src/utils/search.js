@@ -32,9 +32,29 @@ export function sortByEnglish(stocks) {
   )
 }
 
-/** 追加した日時の新しい順に並べた新しい配列を返す（同じ日時ならアルファベット順） */
-export function sortByNewest(stocks) {
-  return sortByEnglish(stocks).sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
+/** 単語帳の並び順（プルダウンの選択肢） */
+export const SORTS = [
+  { value: 'abc', label: 'ABC順' },
+  { value: 'new', label: '新しい順' },
+  { value: 'old', label: '古い順' },
+  { value: 'learned', label: '覚えたが上' },
+  { value: 'unlearned', label: 'まだが上' },
+]
+
+const byDate = (a, b) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''))
+const byLearned = (a, b) => Number(Boolean(b.learned)) - Number(Boolean(a.learned))
+
+/**
+ * 選んだ並び順に並べた新しい配列を返す。同じ順位どうしはアルファベット順（並びが毎回変わらないように）。
+ * @param {'abc' | 'new' | 'old' | 'learned' | 'unlearned'} sort
+ */
+export function sortStocks(stocks, sort) {
+  const list = sortByEnglish(stocks)
+  if (sort === 'new') return list.sort((a, b) => byDate(b, a))
+  if (sort === 'old') return list.sort(byDate)
+  if (sort === 'learned') return list.sort(byLearned)
+  if (sort === 'unlearned') return list.sort((a, b) => byLearned(b, a))
+  return list
 }
 
 /**
