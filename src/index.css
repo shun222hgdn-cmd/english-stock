@@ -2161,5 +2161,16 @@ body:has(dialog[open]) {
 .quiz-card-wrap,
 .detail-swipe {
   touch-action: pan-y;
-  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  will-change: transform;
+}
+
+/* カードを払っている間・飛んでいく間は、画面の横に出た部分を隠す（横スクロールを出さない） */
+.app-main,
+.modal-body {
+  overflow-x: clip;
+}
+
+/* 傾けたときに、カードの下側を中心に回る（手で持って払う感じ） */
+.quiz-card-wrap {
+  transform-origin: 50% 120%;
 }

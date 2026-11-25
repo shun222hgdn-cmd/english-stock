@@ -1,18 +1,28 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+const OUT_MS = 180 // 画面の外へ飛んでいく時間
+const IN_MS = 260 // 次のカードが入ってくる時間
 
 /**
- * 指で左右にスワイプしたときの操作（スマホ用。マウスでは反応しない）。
- * - 要素は指についてそのまま動く（その向きの操作が無いときは、少しだけ動いて重く感じる）
- * - 要素の幅の半分以上動かして離したら、その向きの操作をする。半分より手前なら元に戻る
- * - 縦のスクロールはそのまま使えるよう、横の動きが縦より大きいときだけ動かす
- * - スワイプしたときは、そのあとに起きる「タップ」を取り消す（カードを押した扱いにしない）
+ * 指で左右にスワイプしたときの操作（スマホ用。マウスでは反応しない）。本物のカードを払う感じを出す。
+ * - 動かしている間：要素ごと指について動き、tilt なら少し傾く
+ * - 幅の半分以上で離す：その向きへ画面の外まで飛んでいき、操作をしてから、次の中身が反対側から入ってくる
+ * - 半分より手前で離す：元の位置へ戻る
+ * - その向きの操作が無いときは、少しだけ動いて重く感じる
+ * - 縦のスクロールはそのまま（最初の動きが縦ならスワイプにしない）
+ * - スワイプしたときは、そのあとの「タップ」を取り消す
  *
- * @param {{ onLeft?: () => void, onRight?: () => void }} actions 左へ / 右へスワイプしたとき
- * @returns {{ handlers: object, style?: object }} handlers を要素に付け、style で指について動かす
+ * @param {{ onLeft?: () => void, onRight?: () => void, tilt?: boolean }} options
+ * @returns {{ handlers: object, style?: object }}
  */
-export function useSwipe({ onLeft, onRight }) {
+export function useSwipe({ onLeft, onRight, tilt = false }) {
   const start = useRef(null) // { x, y, width, horizontal }
-  const [drag, setDrag] = useState(null) // 指で動かしている間の横のずれ（px）
+  const timers = useRef([])
+  // x：横のずれ（px） / ms：戻る・飛ぶアニメーションの時間（0 なら指にそのまま）
+  const [pos, setPos] = useState(null)
+
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  const later = (fn, ms) => timers.current.push(setTimeout(fn, ms))
 
   const actionFor = (dx) => (dx < 0 ? onLeft : onRight)
 
@@ -27,36 +37,40 @@ export function useSwipe({ onLeft, onRight }) {
       const touch = event.touches[0]
       const dx = touch.clientX - s.x
       const dy = touch.clientY - s.y
-      // 最初の動きで、横のスワイプか縦のスクロールかを決める
       if (s.horizontal === null && Math.abs(dx) + Math.abs(dy) > 8) s.horizontal = Math.abs(dx) > Math.abs(dy)
       if (!s.horizontal) return
-      setDrag(actionFor(dx) ? dx : dx * 0.2)
+      setPos({ x: actionFor(dx) ? dx : dx * 0.2, ms: 0 })
     },
     onTouchEnd(event) {
       const s = start.current
       start.current = null
-      setDrag(null)
-      if (!s?.horizontal) return
+      if (!s?.horizontal) return setPos(null)
       const dx = event.changedTouches[0].clientX - s.x
       const action = actionFor(dx)
-      if (!action || Math.abs(dx) < s.width / 2) return // 半分より手前なら戻るだけ
+      if (!action || Math.abs(dx) < s.width / 2) return setPos({ x: 0, ms: 220 }) // 戻る
       event.preventDefault() // このあとのタップ（クリック）を起こさない
-      action()
+      const dir = Math.sign(dx)
+      const away = s.width * 1.3
+      setPos({ x: dir * away, ms: OUT_MS }) // 外へ飛んでいく
+      later(() => {
+        action() // 中身を次（前）のものにする
+        setPos({ x: -dir * s.width * 0.6, ms: 0 }) // 反対側に置いて
+        requestAnimationFrame(() => requestAnimationFrame(() => setPos({ x: 0, ms: IN_MS }))) // 入ってくる
+        later(() => setPos(null), IN_MS + 30)
+      }, OUT_MS)
     },
     onTouchCancel() {
       start.current = null
-      setDrag(null)
+      setPos({ x: 0, ms: 220 })
     },
   }
 
-  // 動かしている間はアニメーションなしで指に合わせ、離したら CSS の transition で戻る
   const style =
-    drag === null
+    pos === null
       ? undefined
       : {
-          transform: `translateX(${drag}px)`,
-          transition: 'none',
-          opacity: Math.max(0.4, 1 - Math.abs(drag) / (start.current?.width || 400)),
+          transform: `translateX(${pos.x}px)${tilt ? ` rotate(${Math.max(-8, Math.min(8, pos.x * 0.03))}deg)` : ''}`,
+          transition: pos.ms ? `transform ${pos.ms}ms cubic-bezier(0.2, 0.8, 0.2, 1)` : 'none',
         }
 
   return { handlers, style }

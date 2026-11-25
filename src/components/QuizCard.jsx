@@ -41,7 +41,7 @@ export default function QuizCard({
   onSwipeLeft,
   onSwipeRight,
 }) {
-  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight })
+  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight, tilt: true })
 
   return (
     <div
