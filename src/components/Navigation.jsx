@@ -13,7 +13,8 @@ const NAV_ITEMS = [
 export default function Navigation({ activePage, onNavigate }) {
   return (
     <nav className="bottom-nav" aria-label="メインメニュー">
-      <ul className="bottom-nav-list">
+      {/* 選んでいる画面の札（--index の位置へすべって動く） */}
+      <ul className="bottom-nav-list" style={{ '--index': NAV_ITEMS.findIndex((item) => item.page === activePage) }}>
         {NAV_ITEMS.map(({ page, label, Icon }) => {
           const isActive = page === activePage
           return (

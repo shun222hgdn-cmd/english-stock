@@ -1,6 +1,7 @@
 /**
  * 切り替えボタンの並び（すべて / 単語 / フレーズ / 例文、JP → EN / EN → JP など）。選んでいる方が濃く表示される。
  * 見た目は variant で選ぶ：'segmented'（下線のタブ） / 'lang-switch'（枠つきの2択）。
+ * segmented は、選んでいる印（薄い下地と下線）が選んだタブへすべって動く。
  *
  * @param {{
  *   options: Array<{ value: string, label: string, count?: number, title?: string }>,
@@ -13,8 +14,17 @@
  * }} props
  */
 export default function Choice({ options, value, onChange, label, variant = 'segmented', className = '', disabled }) {
+  const activeIndex = options.findIndex((option) => option.value === value)
+  const isSegmented = variant === 'segmented'
+
   return (
-    <div className={`${variant} ${className}`.trim()} role="group" aria-label={label}>
+    <div
+      className={`${variant} ${className}`.trim()}
+      role="group"
+      aria-label={label}
+      style={isSegmented ? { '--count': options.length, '--index': Math.max(activeIndex, 0) } : undefined}
+    >
+      {isSegmented && activeIndex >= 0 && <span className="segmented-indicator" aria-hidden="true" />}
       {options.map((option) => (
         <button
           key={option.value}

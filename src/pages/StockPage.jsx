@@ -100,6 +100,8 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
         </div>
       )}
 
+      {/* 種類・並び順を変えたら、一覧をふわっと出し直す（key が変わると作り直される） */}
+      <div key={`${filter}-${sort}`} className="list-anim">
       {filteredStocks.length > 0 &&
         (visibleStocks.length === 0 ? (
           <p className="empty-state">「{searchQuery.trim()}」に一致する{noun}はありません。</p>
@@ -118,6 +120,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
             ))}
           </div>
         ))}
+      </div>
 
       {/* 編集画面を開いている間は詳細を隠し、閉じたら詳細に戻る（削除したら消える） */}
       {detailStock && !form && (

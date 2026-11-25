@@ -2039,3 +2039,110 @@ body:has(dialog[open]) {
   margin-right: 10px;
   color: var(--pen);
 }
+
+/* =========================================================
+   動き（なめらかに、でも控えめに）
+   ========================================================= */
+
+/* タブの選択印：薄い下地と下線が、選んだタブへすべって動く */
+.segmented {
+  position: relative;
+  isolation: isolate;
+}
+
+.segmented-indicator {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: -1px;
+  left: 0;
+  width: calc(100% / var(--count));
+  transform: translateX(calc(var(--index) * 100%));
+  border-bottom: 3px solid var(--pen);
+  border-radius: 6px 6px 0 0;
+  background-color: var(--pen-soft);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+/* 印は上の1つだけにする（ボタンごとの下地・下線は使わない） */
+.segmented-btn.is-active {
+  background-color: transparent;
+}
+
+.segmented-btn.is-active::after {
+  display: none;
+}
+
+.segmented-count {
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* 下のタブの札も、すべって動く */
+.bottom-nav-list {
+  position: relative;
+}
+
+.bottom-nav-list::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: calc(var(--index) * 50% + 25% - 28px);
+  width: 56px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: var(--pen-soft);
+  transition: left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.nav-btn.is-active::after {
+  display: none;
+}
+
+/* 画面が変わったとき：ふわっと（動かすと右下の ＋ がずれるので、濃さだけ変える） */
+.page {
+  animation: fade-in 0.22s ease-out;
+}
+
+/* 単語帳の一覧：種類・並び順を変えたとき */
+.list-anim {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* 暗記：次の問題と、出した答え */
+.quiz-question-wrap {
+  animation: rise-in 0.2s ease-out;
+}
+
+.quiz-answer {
+  animation: fade-in 0.18s ease-out;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 端末で「動きを減らす」にしているときは、動きを止める */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .list-anim,
+  .quiz-question-wrap,
+  .quiz-answer {
+    animation: none;
+  }
+
+  .segmented-indicator,
+  .bottom-nav-list::before {
+    transition: none;
+  }
+}

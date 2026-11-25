@@ -50,7 +50,7 @@ export default function QuizCard({
         {/* 問題の欄（高さ固定・この中で上下中央） */}
         <span className="quiz-q-area">
           {/* 問題は真ん中のまま、品詞の印はそのすぐ左（少しあけて）に添える */}
-          <span className="quiz-question-wrap">
+          <span key={question} className="quiz-question-wrap">
             {partOfSpeech && (
               <span className="quiz-pos" title={partOfSpeech} aria-label={partOfSpeech}>
                 {POS_SHORT[partOfSpeech] ?? partOfSpeech}
