@@ -142,7 +142,8 @@ export default function Quiz({ stocks, onSetLearned }) {
             showAnswer={showAnswer}
             categoryLabel={categoryLabel(current.category)}
             partOfSpeech={current.category === 'word' ? current.part_of_speech : null}
-            onToggle={toggleAnswer}
+            // カードを押す：1回目で答え、もう1回で次の問題（押すだけでどんどん進める）
+            onToggle={showAnswer ? () => pickNext() : toggleAnswer}
           />
           <div className="quiz-actions">
             <button

@@ -6,7 +6,7 @@ import { POS_SHORT, isLongText } from '../utils/validation'
  * ランダム出題の単語カード。
  * 上に「問題の欄」、下に「答えの欄」を最初から用意しておき、答えはその欄に出すだけにする。
  * こうすることで、答えを出しても隠しても、問題の位置・カードの大きさ・下のボタンの位置が動かない。
- * カードそのものを押しても、答えの表示・非表示を切り替えられる（紙の単語カードをめくる感覚）。
+ * カードを押すと答えが出て、もう一度押すと次の問題に進む（押すだけでどんどん進める）。
  *
  * カードの右上の 🔊 は「自動読み上げ」のオン / オフ。オンのときは、英語が出たら自動で読む
  * （英語 → 日本語 は問題が出たとき、日本語 → 英語 は答えを開いたとき。先に答えが聞こえないように）。
@@ -21,7 +21,7 @@ import { POS_SHORT, isLongText } from '../utils/validation'
  *   showAnswer: boolean,
  *   categoryLabel: string,   // 左上の小さな種類（単語 / フレーズ / 例文）
  *   partOfSpeech?: string,   // 品詞（単語のときだけ）。問題の少し左に1文字の略（形・動など）で出す
- *   onToggle: () => void,    // カードを押したとき
+ *   onToggle: () => void,    // カードを押したとき（答えを出す → 次の問題へ）
  * }} props
  */
 export default function QuizCard({
@@ -43,7 +43,7 @@ export default function QuizCard({
         className="quiz-card"
         onClick={onToggle}
         aria-expanded={showAnswer}
-        aria-label={showAnswer ? '問題（押すと答えを隠す）' : '問題（押すと答えを表示）'}
+        aria-label={showAnswer ? '問題（押すと次の問題へ）' : '問題（押すと答えを表示）'}
       >
         <span className="quiz-badge">{categoryLabel}</span>
 
