@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const OUT_MS = 180 // 画面の外へ飛んでいく時間
 const IN_MS = 260 // 次のカードが入ってくる時間
@@ -9,19 +9,34 @@ const IN_MS = 260 // 次のカードが入ってくる時間
  * - 幅の半分以上で離す：その向きへ画面の外まで飛んでいき、操作をしてから、次の中身が反対側から入ってくる
  * - 半分より手前で離す：元の位置へ戻る
  * - その向きの操作が無いときは、少しだけ動いて重く感じる
- * - 縦のスクロールはそのまま（最初の動きが縦ならスワイプにしない）
+ * - 縦のスクロールはそのまま（最初の動きが縦ならスワイプにしない）。
+ *   lockScroll のときは、要素に指が触れている間は縦のスクロールもしない（横だけ反応）
  * - スワイプしたときは、そのあとの「タップ」を取り消す
  *
- * @param {{ onLeft?: () => void, onRight?: () => void, tilt?: boolean }} options
- * @returns {{ handlers: object, style?: object }}
+ * @param {{ onLeft?: () => void, onRight?: () => void, tilt?: boolean, lockScroll?: boolean }} options
+ * @returns {{ ref: Function, handlers: object, style?: object }} ref・handlers を要素に付ける
  */
-export function useSwipe({ onLeft, onRight, tilt = false }) {
+export function useSwipe({ onLeft, onRight, tilt = false, lockScroll = false }) {
   const start = useRef(null) // { x, y, width, horizontal }
   const timers = useRef([])
   // x：横のずれ（px） / ms：戻る・飛ぶアニメーションの時間（0 なら指にそのまま）
   const [pos, setPos] = useState(null)
 
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
+
+  // 縦スクロールを止める：React の touchmove は止められない（passive）ので、ブラウザの仕組みで直接付ける
+  const cleanup = useRef(null)
+  const ref = useCallback(
+    (element) => {
+      cleanup.current?.()
+      cleanup.current = null
+      if (!element || !lockScroll) return
+      const stop = (event) => event.preventDefault()
+      element.addEventListener('touchmove', stop, { passive: false })
+      cleanup.current = () => element.removeEventListener('touchmove', stop)
+    },
+    [lockScroll],
+  )
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms))
 
   const actionFor = (dx) => (dx < 0 ? onLeft : onRight)
@@ -73,5 +88,5 @@ export function useSwipe({ onLeft, onRight, tilt = false }) {
           transition: pos.ms ? `transform ${pos.ms}ms cubic-bezier(0.2, 0.8, 0.2, 1)` : 'none',
         }
 
-  return { handlers, style }
+  return { ref, handlers, style }
 }

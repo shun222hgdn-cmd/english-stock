@@ -41,10 +41,12 @@ export default function QuizCard({
   onSwipeLeft,
   onSwipeRight,
 }) {
-  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight, tilt: true })
+  // 指が触れている間は縦にスクロールしない（横に払う操作だけ）
+  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight, tilt: true, lockScroll: true })
 
   return (
     <div
+      ref={swipe.ref}
       className="quiz-card-wrap"
       {...swipe.handlers}
       style={swipe.style}

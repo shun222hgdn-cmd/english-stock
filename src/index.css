@@ -2174,3 +2174,8 @@ body:has(dialog[open]) {
 .quiz-card-wrap {
   transform-origin: 50% 120%;
 }
+
+/* 暗記カードの上では、縦のスクロールもズームもしない（横に払う操作だけ） */
+.quiz-card-wrap {
+  touch-action: none;
+}
