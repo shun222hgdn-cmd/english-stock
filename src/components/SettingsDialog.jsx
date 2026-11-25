@@ -1,21 +1,11 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import Modal from './Modal'
-import Choice from './Choice'
 import { CheckIcon, ChevronRightIcon, ClipboardIcon, DownloadIcon, KeyIcon, LogoutIcon, TrashIcon } from './Icons'
 import { useBusy } from '../hooks/useBusy'
-import {
-  SPEECH_ACCENTS,
-  SPEECH_RATES,
-  isSpeechSupported,
-  loadAutoSpeak,
-  loadSpeechSettings,
-  saveAutoSpeak,
-  speakEnglish,
-} from '../utils/speech'
-import { saveValue } from '../lib/preferences'
 
 /**
- * 設定（ヘッダーの歯車から開く）：ログイン中の ID、CSV の書き出し、発音、パスワード変更、ログアウト。
+ * 設定（ヘッダーの歯車から開く）：まとめて追加、CSV の書き出し、覚えたものの削除、パスワード変更、ログアウト。
+ * 発音の設定は「暗記の設定」にある。
  *
  * @param {{
  *   loginId: string,
@@ -49,18 +39,6 @@ export default function SettingsDialog({
   const [exported, setExported] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const deleting = useBusy('削除できませんでした。')
-  // 発音の設定（この端末に保存）。選ぶとその場で見本を読み上げる
-  const [speech, setSpeech] = useState(loadSpeechSettings)
-  const speechRef = useRef(speech) // 続けて押しても最新の組み合わせで読む
-  const [autoSpeak, setAutoSpeak] = useState(loadAutoSpeak)
-
-  function chooseSpeech(key, value, sample) {
-    const next = { ...speechRef.current, [key]: value }
-    speechRef.current = next
-    setSpeech(next)
-    saveValue(key === 'accent' ? 'speechAccent' : 'speechRate', value)
-    speakEnglish(sample, next)
-  }
 
   return (
     <Modal title="設定" onClose={onClose}>
@@ -153,45 +131,6 @@ export default function SettingsDialog({
                 </span>
               </span>
             </button>
-          )}
-        </li>
-      </ul>
-
-      <ul className="settings-group">
-        <li className="settings-speech">
-          <p className="settings-speech-title">発音</p>
-          {isSpeechSupported() ? (
-            <>
-              <Choice
-                variant="lang-switch"
-                label="発音の種類"
-                options={SPEECH_ACCENTS}
-                value={speech.accent}
-                onChange={(value) => chooseSpeech('accent', value, 'Hello')}
-              />
-              <Choice
-                variant="lang-switch"
-                label="読む速さ"
-                options={SPEECH_RATES}
-                value={speech.rate}
-                onChange={(value) => chooseSpeech('rate', value, 'Nice to meet you')}
-              />
-              <Choice
-                variant="lang-switch"
-                label="自動読み上げ"
-                options={[
-                  { value: 'on', label: '自動で読む' },
-                  { value: 'off', label: '押したときだけ' },
-                ]}
-                value={autoSpeak ? 'on' : 'off'}
-                onChange={(value) => {
-                  setAutoSpeak(value === 'on')
-                  saveAutoSpeak(value === 'on')
-                }}
-              />
-            </>
-          ) : (
-            <p className="settings-row-sub">この端末・ブラウザでは発音を使えません</p>
           )}
         </li>
       </ul>
