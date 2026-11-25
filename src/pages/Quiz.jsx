@@ -29,7 +29,7 @@ import { categoryLabel } from '../utils/validation'
 /**
  * 暗記。取得済みの stocks から出すので、出題のたびに通信はしない。
  * カードを押すと答え → もう一度で次の問題。「前の問題」で戻れる。
- * 右上の調整ボタンで「暗記の設定」（表示・順番・覚えたもの・自動で進む・発音）を変えられる。設定は端末に保存。
+ * 右上の調整ボタンで「暗記の設定」（向き・表示・順番・覚えたもの・自動で進む・発音）を変えられる。設定は端末に保存。
  *
  * @param {{ stocks: Array<object>, onSetLearned: (id: string, learned: boolean) => Promise<void> }} props
  */
@@ -157,13 +157,6 @@ export default function Quiz({ stocks, onSetLearned }) {
       <div className="page-header">
         <h1 className="page-title">暗記</h1>
         <span className="quiz-header-tools">
-          <Choice
-            variant="lang-switch"
-            label="出題方向"
-            options={QUIZ_DIRECTIONS.map(({ value, label, description }) => ({ value, label, title: description }))}
-            value={quizDirection}
-            onChange={changeDirection}
-          />
           <button
             type="button"
             className="icon-btn quiz-settings-btn"
@@ -242,7 +235,18 @@ export default function Quiz({ stocks, onSetLearned }) {
 
       {settingsOpen && (
         <Modal title="暗記の設定" onClose={() => setSettingsOpen(false)}>
-          <ul className="settings-group quiz-settings">
+          {/* 区切り線なしの1つの並び */}
+          <ul className="quiz-settings">
+            <li className="quiz-setting">
+              <span className="quiz-setting-label">向き</span>
+              <Choice
+                variant="lang-switch"
+                label="出題方向"
+                options={QUIZ_DIRECTIONS.map(({ value, label, description }) => ({ value, label, title: description }))}
+                value={quizDirection}
+                onChange={changeDirection}
+              />
+            </li>
             {QUIZ_OPTIONS.map(({ key, label, choices }) => (
               <li key={key} className="quiz-setting">
                 <span className="quiz-setting-label">{label}</span>
@@ -255,10 +259,6 @@ export default function Quiz({ stocks, onSetLearned }) {
                 />
               </li>
             ))}
-          </ul>
-
-          {/* 発音（⚙ 設定から移した） */}
-          <ul className="settings-group quiz-settings">
             {isSpeechSupported() ? (
               <>
                 <li className="quiz-setting">
