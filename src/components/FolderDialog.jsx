@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import Modal from './Modal'
-import { CloseIcon, FolderIcon, FolderPlusIcon, LockIcon, MoreIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
-import { MAX_FOLDER_DEPTH, cleanFolderName, folderDepth, folderSubtree } from '../utils/folders'
+import { ChevronRightIcon, CloseIcon, FolderIcon, FolderPlusIcon, LockIcon, MoreIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
+import { MAX_FOLDER_DEPTH, cleanFolderName, folderDepth, folderPath, folderSubtree } from '../utils/folders'
 import { FOLDER_LOCK_MIN_LENGTH, validateFolderLock } from '../utils/folderLock'
 import { useBusy } from '../hooks/useBusy'
 
 /**
  * フォルダの切り替え・追加・名前変更・鍵・削除（1つのアカウントを複数人で使うとき、ここで誰のフォルダを見るか選ぶ）。
  * フォルダの中にフォルダを作れる（5段まで）。一覧は木の形で、中のフォルダは字下げして並べる。
+ * 中のフォルダは、ふだんは閉じておき、▸ で開く（今のフォルダの親だけは、最初から開いておく）。
  *
  * @param {{
  *   folders: Array<{ id: string, name: string, lock_hash: string | null }>,
@@ -42,6 +43,16 @@ export default function FolderDialog({
   const [rowMode, setRowMode] = useState(null)
   // 「⋯」で操作（鍵・名前変更・削除）を出している行の id
   const [menuId, setMenuId] = useState(null)
+  // 中のフォルダを開いているフォルダの id（最初は、今のフォルダの親だけ開いて、今の場所が見えるようにする）
+  const [expanded, setExpanded] = useState(() => new Set(folderPath(folders, currentId).slice(0, -1)))
+  const toggleExpanded = (id) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  // 親が全部開いているフォルダだけ見せる
+  const isVisible = (folder) => folderPath(folders, folder.id).slice(0, -1).every((id) => expanded.has(id))
   const { busy, error, run } = useBusy('保存に失敗しました。')
   const [newName, setNewName] = useState('')
   const [newNameError, setNewNameError] = useState('')
@@ -144,13 +155,29 @@ export default function FolderDialog({
       setRowMode({ type, id: folder.id })
     }
 
+    const hasChildren = folders.some((f) => f.parent_id === folder.id)
+    const isExpanded = expanded.has(folder.id)
+
     return (
       <>
+        {/* 中のフォルダを開く・閉じる ▸（中が無いフォルダは、そろえるための空き）。段の深さだけ字下げ */}
+        <span className="folder-indent" style={{ width: `${(depth - 1) * 18}px` }} />
+        {hasChildren ? (
+          <button
+            type="button"
+            className={`folder-toggle${isExpanded ? ' is-open' : ''}`}
+            onClick={() => toggleExpanded(folder.id)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? `「${folder.name}」の中を閉じる` : `「${folder.name}」の中を開く`}
+          >
+            <ChevronRightIcon size={16} />
+          </button>
+        ) : (
+          <span className="folder-toggle" aria-hidden="true" />
+        )}
         <button
           type="button"
           className="folder-select"
-          // 中のフォルダは、段の深さだけ字下げする
-          style={{ paddingLeft: `${8 + (depth - 1) * 20}px` }}
           onClick={() => selectAndClose(folder.id)}
           aria-current={isCurrent ? 'true' : undefined}
           disabled={locked}
@@ -227,7 +254,7 @@ export default function FolderDialog({
   return (
     <Modal title="フォルダ" onClose={onClose} busy={busy} closeOnBackdrop={!rowMode && !newName.trim()}>
       <ul className="folder-list">
-        {folders.map((folder) => {
+        {folders.filter(isVisible).map((folder) => {
           const mode = rowMode?.id === folder.id ? rowMode.type : null
           const className = mode === 'delete' ? ' folder-row-danger' : !mode && folder.id === currentId ? ' is-current' : ''
           return (
