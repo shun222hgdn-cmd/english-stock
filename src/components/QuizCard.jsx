@@ -1,6 +1,6 @@
 import { SpeakerIcon, SpeakerOffIcon } from './Icons'
 import { isSpeechSupported } from '../utils/speech'
-import { isLongText } from '../utils/validation'
+import { POS_SHORT, isLongText } from '../utils/validation'
 
 /**
  * ランダム出題の単語カード。
@@ -19,7 +19,8 @@ import { isLongText } from '../utils/validation'
  *   autoSpeak: boolean,      // 自動読み上げがオンか
  *   onToggleAutoSpeak: () => void,
  *   showAnswer: boolean,
- *   categoryLabel: string,   // 単語 / フレーズ / 例文（品詞があれば「単語・形容詞」のように）
+ *   categoryLabel: string,   // 左上の小さな種類（単語 / フレーズ / 例文）
+ *   partOfSpeech?: string,   // 品詞（単語のときだけ）。問題の少し左に1文字の略（形・動など）で出す
  *   onToggle: () => void,    // カードを押したとき
  * }} props
  */
@@ -32,6 +33,7 @@ export default function QuizCard({
   onToggleAutoSpeak,
   showAnswer,
   categoryLabel,
+  partOfSpeech,
   onToggle,
 }) {
   return (
@@ -47,8 +49,16 @@ export default function QuizCard({
 
         {/* 問題の欄（高さ固定・この中で上下中央） */}
         <span className="quiz-q-area">
-          <span className={`quiz-question${isLongText(question) ? ' is-long' : ''}`} lang={questionLang}>
-            {question}
+          {/* 問題は真ん中のまま、品詞の印はそのすぐ左（少しあけて）に添える */}
+          <span className="quiz-question-wrap">
+            {partOfSpeech && (
+              <span className="quiz-pos" title={partOfSpeech} aria-label={partOfSpeech}>
+                {POS_SHORT[partOfSpeech] ?? partOfSpeech}
+              </span>
+            )}
+            <span className={`quiz-question${isLongText(question) ? ' is-long' : ''}`} lang={questionLang}>
+              {question}
+            </span>
           </span>
         </span>
 

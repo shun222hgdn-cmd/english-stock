@@ -5,7 +5,6 @@ import assert from 'node:assert/strict'
 import { filterStocks, groupByInitial, sortByEnglish, sortStocks } from '../src/utils/search.js'
 import {
   categoryLabel,
-  categoryWithPos,
   isLongText,
   cleanStockExtras,
   cleanStockInput,
@@ -126,10 +125,8 @@ test('種類の自動判定：スペースなしは単語、3語以上で . ? ! 
   assert.equal(guessCategory('He said, "Let\'s go!"'), 'sentence') // 引用符で終わっても文
 })
 
-test('種類の表示名と、品詞つきの表示', () => {
+test('種類の表示名', () => {
   assert.equal(categoryLabel('sentence'), '例文')
-  assert.equal(categoryWithPos({ category: 'word', part_of_speech: '形容詞' }), '単語・形容詞')
-  assert.equal(categoryWithPos({ category: 'sentence', part_of_speech: '名詞' }), '例文') // 品詞は単語だけ
 })
 
 test('長い文の判定（40文字を超えたら小さめの文字にする）', () => {

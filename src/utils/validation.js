@@ -31,10 +31,6 @@ export const CATEGORIES = [
 /** 種類の表示名（単語 / フレーズ / 例文） */
 export const categoryLabel = (value) => CATEGORIES.find((c) => c.value === value)?.label ?? value
 
-/** 「単語・形容詞」のように、品詞があれば付けた表示名 */
-export const categoryWithPos = (stock) =>
-  [categoryLabel(stock.category), stock.category === 'word' && stock.part_of_speech].filter(Boolean).join('・')
-
 /**
  * 英語の内容から種類を推測する（登録フォーム・まとめて追加の自動判定用）。
  * - スペースなし → 単語（例：Ambiguous）
@@ -97,6 +93,20 @@ export const PARTS_OF_SPEECH = [
   '接続詞',
   '間投詞',
 ]
+
+/** 品詞の1文字の略（辞書の書き方。例：形容詞 → 形） */
+export const POS_SHORT = {
+  名詞: '名',
+  代名詞: '代',
+  動詞: '動',
+  形容詞: '形',
+  副詞: '副',
+  助動詞: '助',
+  前置詞: '前',
+  冠詞: '冠',
+  接続詞: '接',
+  間投詞: '間',
+}
 
 /** コメントの最大文字数（データベースの制約と同じ） */
 export const NOTE_MAX_LENGTH = 500

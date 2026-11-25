@@ -1,26 +1,26 @@
 /* =========================================================
    English Stock 共通スタイル
-   「紙の単語帳」：生成りの紙・墨色の文字・青ペンの差し色。
+   「黒い革の単語帳」：黒の地・生成りの文字・琥珀の差し色の2色だけ。
    カードで囲まず、罫線で区切る。英語は本のような書体で表示する。
-   端末がダークモードのときは、同じ考え方の「夜のノート」配色になる。
+   端末のライト / ダークモードに関係なく、いつも同じ配色。
    ========================================================= */
 
 /* ---------- 色・書体・サイズの定義（ここを変えると全体に反映される） ---------- */
 :root {
-  --paper: #f7f4ed; /* 背景（紙） */
-  --sheet: #fffdf8; /* 入力欄・カードなど一段明るい紙 */
-  --ink: #23211d; /* メイン文字（墨） */
-  --ink-soft: #6f6a60; /* サブ文字 */
-  --ink-faint: #a29c90; /* さらに薄い文字（補足・プレースホルダー） */
-  --rule: #e4ded1; /* 罫線 */
-  --rule-strong: #cfc7b6; /* 濃い罫線（入力欄の枠など） */
-  --pen: #2b5ea7; /* 差し色（青ペン） */
-  --pen-soft: rgba(43, 94, 167, 0.1);
-  --on-pen: #ffffff; /* 青ペン色の上の文字 */
-  --undo-accent: #9cc0f2; /* 「元に戻す」の帯（墨色）の上の青 */
-  --red: #b53a2c; /* 削除・エラー（赤ペン） */
-  --red-soft: rgba(181, 58, 44, 0.08);
-  --amber: #9a6a12; /* 注意（重複など） */
+  /* 黒と琥珀（アンバー）の2色だけ。端末のライト / ダークモードに関係なく、いつも同じ配色 */
+  --paper: #0f0f0f; /* 背景（黒） */
+  --sheet: #191919; /* 入力欄・カードなど一段明るい黒 */
+  --ink: #f2efe9; /* メイン文字（生成りの白） */
+  --ink-soft: #a8a39b; /* サブ文字 */
+  --ink-faint: #6f6b65; /* さらに薄い文字（補足） */
+  --rule: #262524; /* 罫線 */
+  --rule-strong: #3a3836; /* 濃い罫線（入力欄の枠など） */
+  --pen: #e3a83b; /* 差し色（琥珀） */
+  --pen-soft: rgba(227, 168, 59, 0.14);
+  --on-pen: #141414; /* 琥珀の上の文字 */
+  --red: #e5735f; /* 削除・エラー */
+  --red-soft: rgba(229, 115, 95, 0.12);
+  --amber: #e8c37a; /* 注意（重複など） */
 
   --font-ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Noto Sans JP', Meiryo,
     system-ui, sans-serif;
@@ -31,7 +31,7 @@
   --nav-height: 58px;
   --nav-lift: 12px; /* 下のタブを画面の下端から少し持ち上げる */
 
-  color-scheme: light;
+  color-scheme: dark;
   font-family: var(--font-ja);
   font-size: 16px;
   line-height: 1.6;
@@ -39,27 +39,6 @@
   background-color: var(--paper);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* 端末がダークモードのとき（夜のノート） */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1c1b18;
-    --sheet: #24231f;
-    --ink: #ebe6db;
-    --ink-soft: #a7a094;
-    --ink-faint: #767065;
-    --rule: #34322c;
-    --rule-strong: #4a463e;
-    --pen: #8db1e6;
-    --pen-soft: rgba(141, 177, 230, 0.12);
-    --on-pen: #14223a;
-    --undo-accent: #2b5ea7;
-    --red: #e58a7c;
-    --red-soft: rgba(229, 138, 124, 0.1);
-    --amber: #e0b35a;
-    color-scheme: dark;
-  }
 }
 
 /* ---------- 基本 ---------- */
@@ -253,7 +232,7 @@ button:disabled {
 
 .btn-danger {
   background-color: var(--red);
-  color: #fff;
+  color: var(--on-pen);
 }
 
 /* 文字だけのボタン（「＋ 追加」「削除」など） */
@@ -904,11 +883,37 @@ code {
 
 /* 問題の欄：高さ固定。問題はこの中で上下中央 */
 .quiz-q-area {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 150px;
-  padding: 8px 0 16px;
+  padding: 8px 34px 16px; /* 左右は品詞の印の分あけて、問題は真ん中のまま */
+}
+
+/* 品詞：問題の少し左に1文字の四角い印（形・動 など）。左から読むので先に品詞が目に入る */
+/* 問題の文字を包む枠（品詞の印の位置の基準） */
+.quiz-question-wrap {
+  position: relative;
+  max-width: 100%;
+}
+
+.quiz-pos {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 16px); /* 問題の左端から 16px 左 */
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--pen);
+  border-radius: 3px;
+  color: var(--pen);
+  font-family: var(--font-ja);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .quiz-question {
@@ -1516,7 +1521,7 @@ code {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--undo-accent);
+  color: var(--pen);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1747,7 +1752,7 @@ code {
 }
 
 .modal::backdrop {
-  background-color: rgba(20, 18, 14, 0.45);
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 .modal-body {
@@ -1996,4 +2001,21 @@ body:has(dialog[open]) {
   .modal::backdrop {
     animation: none;
   }
+}
+
+/* ---------- 2色に統一：選択中はすべて琥珀 ---------- */
+.lang-switch-btn.is-active {
+  background-color: var(--pen);
+  color: var(--on-pen);
+}
+
+/* 「元に戻す」の帯：黒の上に一段明るい黒、ボタンは琥珀 */
+.undo-bar {
+  background-color: #262422;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+}
+
+.undo-bar-btn {
+  color: var(--pen);
 }

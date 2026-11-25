@@ -5,7 +5,7 @@ import LearnedButton from '../components/LearnedButton'
 import { QUIZ_CATEGORIES, QUIZ_DIRECTIONS, filterByCategory, getQuestionAndAnswer, pickRandomStock } from '../utils/quiz'
 import { loadChoice, saveValue } from '../lib/preferences'
 import { loadAutoSpeak, saveAutoSpeak, speakEnglish, stopSpeaking } from '../utils/speech'
-import { categoryLabel, categoryWithPos } from '../utils/validation'
+import { categoryLabel } from '../utils/validation'
 
 /**
  * 暗記（ランダム出題）。取得済みの stocks から選ぶので、出題のたびに通信はしない。
@@ -140,7 +140,8 @@ export default function Quiz({ stocks, onSetLearned }) {
             autoSpeak={autoSpeak}
             onToggleAutoSpeak={toggleAutoSpeak}
             showAnswer={showAnswer}
-            categoryLabel={categoryWithPos(current)}
+            categoryLabel={categoryLabel(current.category)}
+            partOfSpeech={current.category === 'word' ? current.part_of_speech : null}
             onToggle={toggleAnswer}
           />
           <div className="quiz-actions">
