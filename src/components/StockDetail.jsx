@@ -65,7 +65,7 @@ export default function StockDetail({ stock, position, onPrev, onNext, onSetLear
       <div
         className="detail-swipe"
         {...swipe.handlers}
-        style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
+        style={swipe.style}
       >
       <div className="detail-english-row">
         <h2 id={titleId} className={`detail-english${isLongText(stock.english) ? ' is-long' : ''}`} lang="en">

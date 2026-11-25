@@ -2157,9 +2157,9 @@ body:has(dialog[open]) {
   }
 }
 
-/* スワイプ：縦のスクロールはブラウザに任せ、横の動きだけアプリで受け取る。離したらすっと戻る */
+/* スワイプ：縦のスクロールはブラウザに任せ、横の動きだけアプリで受け取る。指について動き、離したらすっと戻る */
 .quiz-card-wrap,
 .detail-swipe {
   touch-action: pan-y;
-  transition: transform 0.18s ease-out;
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }

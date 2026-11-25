@@ -92,7 +92,7 @@ export default function Quiz({ stocks, onSetLearned }) {
   /** 答えを出す。英語が答えのとき（JP → EN）は、出したときに読む */
   function revealAnswer() {
     setShowAnswer(true)
-    stopSpeaking()
+    // 読み上げ中の英語は止めない（止めるのは別の問題に移ったとき）
     if (autoSpeak && current && isJaToEn) speakEnglish(current.english)
   }
 

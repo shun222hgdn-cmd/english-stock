@@ -47,7 +47,7 @@ export default function QuizCard({
     <div
       className="quiz-card-wrap"
       {...swipe.handlers}
-      style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
+      style={swipe.style}
     >
       <button
         type="button"
