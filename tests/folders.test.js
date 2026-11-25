@@ -6,6 +6,10 @@ import {
   FOLDER_NAME_MAX,
   cleanFolderName,
   filterByFolder,
+  filterByFolders,
+  folderDepth,
+  folderPath,
+  folderSubtree,
   pickCurrentFolder,
   sortFolders,
 } from '../src/utils/folders.js'
@@ -77,4 +81,38 @@ test('フォルダは名前順に並び、元の配列は変更しない', () =>
   assert.equal(sorted.length, 3)
   assert.deepEqual(folders, copy)
   assert.equal(sorted[0].name, 'Sohee') // 英字が先、続いて日本語
+})
+
+// 入れ子：English ─ Junior ─ Year1、English ─ High、Math
+const tree = [
+  { id: 'h', name: 'High', parent_id: 'e' },
+  { id: 'm', name: 'Math', parent_id: null },
+  { id: 'j1', name: 'Year1', parent_id: 'j' },
+  { id: 'e', name: 'English', parent_id: null },
+  { id: 'j', name: 'Junior', parent_id: 'e' },
+]
+
+test('入れ子：親のすぐ後に子が並ぶ（同じ親の中は名前順）', () => {
+  assert.deepEqual(sortFolders(tree).map((f) => f.id), ['e', 'h', 'j', 'j1', 'm'])
+})
+
+test('入れ子：深さと、いちばん上からの道のり', () => {
+  assert.equal(folderDepth(tree, 'e'), 1)
+  assert.equal(folderDepth(tree, 'j1'), 3)
+  assert.deepEqual(folderPath(tree, 'j1'), ['e', 'j', 'j1'])
+})
+
+test('入れ子：フォルダの中身（中のフォルダも含む）', () => {
+  assert.deepEqual([...folderSubtree(tree, 'e')].sort(), ['e', 'h', 'j', 'j1'])
+  assert.deepEqual([...folderSubtree(tree, 'm')], ['m'])
+  const list = [
+    { id: 1, folder_id: 'j1' },
+    { id: 2, folder_id: 'm' },
+    { id: 3, folder_id: 'e' },
+  ]
+  assert.deepEqual(filterByFolders(list, folderSubtree(tree, 'e')).map((s) => s.id), [1, 3])
+})
+
+test('入れ子：親が見つからないフォルダは、いちばん上として扱う', () => {
+  assert.deepEqual(sortFolders([{ id: 'x', name: 'X', parent_id: 'gone' }]).map((f) => f.id), ['x'])
 })

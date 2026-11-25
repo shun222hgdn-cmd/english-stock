@@ -251,3 +251,12 @@ export function SlidersIcon(props) {
     </Icon>
   )
 }
+
+export function FolderPlusIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
+      <path d="M12 11v5M9.5 13.5h5" />
+    </Icon>
+  )
+}

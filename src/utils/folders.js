@@ -40,7 +40,60 @@ export function filterByFolder(stocks, folderId) {
   return stocks.filter((stock) => stock.folder_id === folderId)
 }
 
-/** フォルダを名前順（日本語・英語とも自然な順）に並べた新しい配列を返す */
+/** 指定したフォルダたち（id の Set）のデータを返す */
+export function filterByFolders(stocks, folderIds) {
+  return stocks.filter((stock) => folderIds.has(stock.folder_id))
+}
+
+// ---------- 入れ子（フォルダの中のフォルダ） ----------
+
+/** 入れ子にできる深さ（いちばん上を 1 段目として 5 段目まで） */
+export const MAX_FOLDER_DEPTH = 5
+
+const byName = (a, b) => a.name.localeCompare(b.name, 'ja')
+
+/**
+ * フォルダを木の順に並べた新しい配列を返す（親のすぐ後に子。同じ親の中は名前順）。
+ * 親が見つからないフォルダは、いちばん上として扱う。
+ */
 export function sortFolders(folders) {
-  return [...folders].sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+  const ids = new Set(folders.map((f) => f.id))
+  const childrenOf = (parentId) =>
+    folders.filter((f) => (f.parent_id && ids.has(f.parent_id) ? f.parent_id : null) === parentId).sort(byName)
+  const out = []
+  const visit = (parentId) => {
+    for (const folder of childrenOf(parentId)) {
+      out.push(folder)
+      visit(folder.id)
+    }
+  }
+  visit(null)
+  return out
+}
+
+/** いちばん上から自分までのフォルダ id（自分を含む） */
+export function folderPath(folders, id) {
+  const byId = new Map(folders.map((f) => [f.id, f]))
+  const path = []
+  for (let f = byId.get(id); f && path.length <= MAX_FOLDER_DEPTH + 1; f = byId.get(f.parent_id)) path.unshift(f.id)
+  return path
+}
+
+/** 何段目か（いちばん上が 1） */
+export const folderDepth = (folders, id) => folderPath(folders, id).length
+
+/** 自分と、中にあるすべてのフォルダの id（Set） */
+export function folderSubtree(folders, id) {
+  const ids = new Set([id])
+  let added = true
+  while (added) {
+    added = false
+    for (const f of folders) {
+      if (f.parent_id && ids.has(f.parent_id) && !ids.has(f.id)) {
+        ids.add(f.id)
+        added = true
+      }
+    }
+  }
+  return ids
 }

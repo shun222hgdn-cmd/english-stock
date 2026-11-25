@@ -83,24 +83,26 @@ export function useStocks(userId) {
     removeStocks: (ids) => change(() => api.deleteStocks(ids), (list) => list.filter((stock) => !ids.includes(stock.id))),
     /** 削除の取り消し（消したデータをそのまま戻す） */
     restoreStocks: (stocks) => change(() => api.restoreStocks(stocks), (list, restored) => [...list, ...restored]),
-    /** フォルダを削除したとき、そのフォルダの分を手元からも消す（DB 側は自動で削除済み） */
-    forgetFolderStocks: (folderId) =>
-      change(async () => {}, (list) => list.filter((stock) => stock.folder_id !== folderId)),
+    /** フォルダを削除したとき、そのフォルダたち（id の Set）の分を手元からも消す（DB 側は自動で削除済み） */
+    forgetFolderStocks: (folderIds) =>
+      change(async () => {}, (list) => list.filter((stock) => !folderIds.has(stock.folder_id))),
   }
 }
 
-/** フォルダ（名前順） */
+/** フォルダ（木の順：親のすぐ後に子） */
 export function useFolders(userId) {
   const { items, change, ...rest } = useRemoteList(api.fetchFolders, userId, 'フォルダの読み込みに失敗しました。', sortFolders)
   const update = (id, changes) => change(() => api.updateFolder(id, changes), replace)
   return {
     ...rest,
     folders: items,
-    addFolder: (name) => change(() => api.createFolder(name), (list, created) => [...list, created]),
+    addFolder: (name, parentId = null) => change(() => api.createFolder(name, parentId), (list, created) => [...list, created]),
     renameFolder: (id, name) => update(id, { name }),
     /** 鍵の設定・解除（lockHash が null なら解除） */
     setLock: (id, lockHash) => update(id, { lock_hash: lockHash }),
-    removeFolder: (id) => change(() => api.deleteFolder(id), (list) => list.filter((folder) => folder.id !== id)),
+    /** 削除（ids：中のフォルダも含めた id の Set。手元からもまとめて消す） */
+    removeFolder: (id, ids = new Set([id])) =>
+      change(() => api.deleteFolder(id), (list) => list.filter((folder) => !ids.has(folder.id))),
     restoreFolder: (folder) => change(() => api.restoreFolder(folder), (list, restored) => [...list, restored]),
     /** 管理者パスワードで鍵を外す（'ok' のときだけ手元の鍵も外す） */
     clearLockWithAdmin: (id, adminPassword) =>

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 // 「ログイン中のユーザー本人のデータ」だけが対象になる（作成時の user_id も DB の既定値で入る）。
 
 const STOCK_COLUMNS = 'id, folder_id, category, english, japanese, part_of_speech, note, learned, created_at'
-const FOLDER_COLUMNS = 'id, name, lock_hash'
+const FOLDER_COLUMNS = 'id, name, lock_hash, parent_id'
 
 /** 通信結果からデータを取り出す（失敗なら例外） */
 async function unwrap(request) {
@@ -82,18 +82,19 @@ export async function deleteStocks(ids) {
 
 export const fetchFolders = () => unwrap(supabase.from('folders').select(FOLDER_COLUMNS))
 
-export const createFolder = (name) =>
-  unwrap(supabase.from('folders').insert({ name }).select(FOLDER_COLUMNS).single())
+/** フォルダを作る（parentId を渡すと、そのフォルダの中に作る） */
+export const createFolder = (name, parentId = null) =>
+  unwrap(supabase.from('folders').insert({ name, parent_id: parentId }).select(FOLDER_COLUMNS).single())
 
 /** 削除を取り消す：フォルダを同じ id・名前・鍵で元に戻す（中身は restoreStocks で戻す） */
-export const restoreFolder = ({ id, name, lock_hash }) =>
-  unwrap(supabase.from('folders').insert({ id, name, lock_hash }).select(FOLDER_COLUMNS).single())
+export const restoreFolder = ({ id, name, lock_hash, parent_id }) =>
+  unwrap(supabase.from('folders').insert({ id, name, lock_hash, parent_id }).select(FOLDER_COLUMNS).single())
 
 /** 名前や鍵（lock_hash。null で鍵なし）を変更する */
 export const updateFolder = (id, changes) =>
   unwrap(supabase.from('folders').update(changes).eq('id', id).select(FOLDER_COLUMNS).single())
 
-/** 削除する（中の単語・フレーズもデータベース側で一緒に削除される） */
+/** 削除する（中のフォルダと単語・フレーズも、データベース側で一緒に削除される） */
 export const deleteFolder = (id) => unwrap(supabase.from('folders').delete().eq('id', id))
 
 // ---------- 管理者パスワード（確認はデータベースの関数で行い、結果を 'ok' などの文字で返す） ----------

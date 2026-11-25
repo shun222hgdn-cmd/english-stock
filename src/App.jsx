@@ -20,7 +20,7 @@ import { toDisplayId } from './utils/loginId'
 import { hashFolderPassword, verifyFolderPassword } from './utils/folderLock'
 import { buildCsvFileName, buildStocksCsv } from './utils/csv'
 import { QUIZ_CATEGORIES } from './utils/quiz'
-import { filterByFolder, pickCurrentFolder } from './utils/folders'
+import { filterByFolders, folderPath, folderSubtree, pickCurrentFolder, sortFolders } from './utils/folders'
 import { toErrorMessage } from './utils/errors'
 
 /** アプリの入口。Supabase の接続情報が無いときは設定案内を出す */
@@ -56,9 +56,10 @@ function MainApp({ userId, email, onSignOut }) {
   const [dialog, setDialog] = useState(null) // 'folders' / 'settings' / 'password' / 'bulk'
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
-  // この端末で前回選んだフォルダ（無ければ先頭）と、今開いている鍵付きフォルダ（切り替えるか閉じると閉まる）
+  // この端末で前回選んだフォルダ（無ければ先頭）と、今開いている鍵付きフォルダたち（別の枝に切り替えるか閉じると閉まる）
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadValue(`folder:${userId}`))
-  const [unlockedFolderId, setUnlockedFolderId] = useState(null)
+  const [unlockedIds, setUnlockedIds] = useState(() => new Set())
+  const unlock = (id) => setUnlockedIds((prev) => new Set(prev).add(id))
   // 削除の直後に出す「元に戻す」（{ key, message, restore } / null）。新しく消したら、そちらに入れ替わる
   const [undo, setUndo] = useState(null)
   const clearUndo = useCallback(() => setUndo(null), [])
@@ -91,18 +92,34 @@ function MainApp({ userId, email, onSignOut }) {
   const loading = stocksData.loading || foldersData.loading
   const error = foldersData.error || stocksData.error
   const currentFolder = pickCurrentFolder(folders, selectedFolderId)
-  const folderStocks = useMemo(
-    () => (currentFolder ? filterByFolder(stocks, currentFolder.id) : []),
-    [stocks, currentFolder],
-  )
-  const folderCounts = useMemo(() => {
-    const result = {}
-    for (const stock of stocks) result[stock.folder_id] = (result[stock.folder_id] ?? 0) + 1
-    return result
-  }, [stocks])
 
-  /** 鍵がかかっていない、または今開いているフォルダか */
-  const isFolderOpen = (folder) => !folder.lock_hash || folder.id === unlockedFolderId
+  /** 自分か親のどこかに、閉じている鍵があれば、いちばん上のそのフォルダ（無ければ null） */
+  const closedLockOf = (folder) =>
+    folderPath(folders, folder.id)
+      .map((id) => folders.find((f) => f.id === id))
+      .find((f) => f?.lock_hash && !unlockedIds.has(f.id)) ?? null
+  /** 鍵がかかっていない、または開いているフォルダか（親の鍵も含めて） */
+  const isFolderOpen = (folder) => !closedLockOf(folder)
+
+  // 表示中のフォルダの単語：自分と中のフォルダの分（中の、鍵が閉じているフォルダの分は除く）
+  const folderStocks = useMemo(() => {
+    if (!currentFolder) return []
+    const ids = new Set([currentFolder.id])
+    for (const folder of sortFolders(folders)) {
+      const open = !folder.lock_hash || unlockedIds.has(folder.id)
+      if (ids.has(folder.parent_id) && open) ids.add(folder.id)
+    }
+    return filterByFolders(stocks, ids)
+  }, [stocks, folders, currentFolder, unlockedIds])
+
+  // フォルダごとの件数（中のフォルダの分も足す）
+  const folderCounts = useMemo(() => {
+    const own = {}
+    for (const stock of stocks) own[stock.folder_id] = (own[stock.folder_id] ?? 0) + 1
+    return Object.fromEntries(
+      folders.map((folder) => [folder.id, [...folderSubtree(folders, folder.id)].reduce((sum, id) => sum + (own[id] ?? 0), 0)]),
+    )
+  }, [stocks, folders])
 
   function navigate(page) {
     setActivePage(page)
@@ -110,7 +127,9 @@ function MainApp({ userId, email, onSignOut }) {
   }
 
   function selectFolder(folderId) {
-    if (folderId !== unlockedFolderId) setUnlockedFolderId(null) // 別のフォルダにしたら鍵はまた閉まる
+    // 開いた鍵は、切り替え先の親（または自分）のものだけ残し、ほかはまた閉める
+    const path = folderPath(folders, folderId)
+    setUnlockedIds((prev) => new Set([...prev].filter((id) => path.includes(id))))
     setSelectedFolderId(folderId)
     saveValue(`folder:${userId}`, folderId)
   }
@@ -177,21 +196,22 @@ function MainApp({ userId, email, onSignOut }) {
         />
       )
     }
-    // 鍵がかかっていて、まだ開いていないフォルダ
-    if (!isFolderOpen(currentFolder)) {
+    // 鍵がかかっていて、まだ開いていないフォルダ（親のフォルダの鍵のこともある）
+    const locked = closedLockOf(currentFolder)
+    if (locked) {
       return (
         <LockedFolder
-          key={currentFolder.id}
-          folderName={currentFolder.name}
+          key={locked.id}
+          folderName={locked.name}
           onUnlock={async (password) => {
-            const ok = await verifyFolderPassword(password, currentFolder.lock_hash)
-            if (ok) setUnlockedFolderId(currentFolder.id)
+            const ok = await verifyFolderPassword(password, locked.lock_hash)
+            if (ok) unlock(locked.id)
             return ok
           }}
           // パスワードを忘れたとき：管理者パスワードで鍵を外す
           onClearWithAdmin={async (adminPassword) => {
-            const result = await foldersData.clearLockWithAdmin(currentFolder.id, adminPassword)
-            if (result === 'ok') setUnlockedFolderId(currentFolder.id)
+            const result = await foldersData.clearLockWithAdmin(locked.id, adminPassword)
+            if (result === 'ok') unlock(locked.id)
             return result
           }}
         />
@@ -249,21 +269,27 @@ function MainApp({ userId, email, onSignOut }) {
           counts={folderCounts}
           onSelect={selectFolder}
           onAdd={foldersData.addFolder}
+          onAddChild={(parentId, name) => foldersData.addFolder(name, parentId)}
           onRename={foldersData.renameFolder}
           // 削除したら中のデータも手元から消す（データベース側は自動で削除される）。
           // 戻せるように、フォルダと中身を覚えておく
           onDelete={async (folderId) => {
             const folder = folders.find((item) => item.id === folderId)
-            const contents = filterByFolder(stocks, folderId)
-            await foldersData.removeFolder(folderId)
-            stocksData.forgetFolderStocks(folderId)
-            let folderBack = false // 途中で失敗してもう一度押したとき、フォルダを二重に戻さない
+            const ids = folderSubtree(folders, folderId) // 中のフォルダも一緒に消える
+            const branch = sortFolders(folders).filter((item) => ids.has(item.id)) // 親が先の順
+            const contents = filterByFolders(stocks, ids)
+            await foldersData.removeFolder(folderId, ids)
+            stocksData.forgetFolderStocks(ids)
+            const restored = new Set() // 途中で失敗してもう一度押したとき、フォルダを二重に戻さない
             setUndo({
               key: Date.now(),
               message: `フォルダ「${folder.name}」を削除しました`,
               restore: async () => {
-                if (!folderBack) await foldersData.restoreFolder(folder)
-                folderBack = true
+                for (const item of branch) {
+                  if (restored.has(item.id)) continue
+                  await foldersData.restoreFolder(item)
+                  restored.add(item.id)
+                }
                 if (contents.length > 0) await stocksData.restoreStocks(contents)
               },
             })
@@ -271,8 +297,8 @@ function MainApp({ userId, email, onSignOut }) {
           isFolderOpen={isFolderOpen}
           onLock={async (folderId, password) => {
             await foldersData.setLock(folderId, await hashFolderPassword(password))
-            // 表示中のフォルダに鍵をかけても、その場では締め出さない
-            if (folderId === currentFolder.id) setUnlockedFolderId(folderId)
+            // 表示中のフォルダ（またはその親）に鍵をかけても、その場では締め出さない
+            if (folderPath(folders, currentFolder.id).includes(folderId)) unlock(folderId)
           }}
           // 鍵を外す（今のパスワードが正しいときだけ。正しければ true）
           onRemoveLock={async (folderId, password) => {

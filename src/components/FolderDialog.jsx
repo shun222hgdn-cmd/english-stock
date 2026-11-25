@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import Modal from './Modal'
-import { CloseIcon, FolderIcon, LockIcon, MoreIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
-import { cleanFolderName } from '../utils/folders'
+import { CloseIcon, FolderIcon, FolderPlusIcon, LockIcon, MoreIcon, PencilIcon, PlusIcon, TrashIcon, UnlockIcon } from './Icons'
+import { MAX_FOLDER_DEPTH, cleanFolderName, folderDepth, folderSubtree } from '../utils/folders'
 import { FOLDER_LOCK_MIN_LENGTH, validateFolderLock } from '../utils/folderLock'
 import { useBusy } from '../hooks/useBusy'
 
 /**
  * フォルダの切り替え・追加・名前変更・鍵・削除（1つのアカウントを複数人で使うとき、ここで誰のフォルダを見るか選ぶ）。
+ * フォルダの中にフォルダを作れる（5段まで）。一覧は木の形で、中のフォルダは字下げして並べる。
  *
  * @param {{
  *   folders: Array<{ id: string, name: string, lock_hash: string | null }>,
@@ -14,6 +15,7 @@ import { useBusy } from '../hooks/useBusy'
  *   counts: Record<string, number>,          // フォルダごとの登録件数
  *   onSelect: (id: string) => void,
  *   onAdd: (name: string) => Promise<{ id: string }>,
+ *   onAddChild: (parentId: string, name: string) => Promise<{ id: string }>, // フォルダの中に作る
  *   onRename: (id: string, name: string) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
  *   isFolderOpen: (folder: object) => boolean,                        // 鍵がない、または開いているフォルダか
@@ -28,6 +30,7 @@ export default function FolderDialog({
   counts,
   onSelect,
   onAdd,
+  onAddChild,
   onRename,
   onDelete,
   isFolderOpen,
@@ -35,7 +38,7 @@ export default function FolderDialog({
   onRemoveLock,
   onClose,
 }) {
-  // 行ごとの操作（null: 通常 / { type: 'rename' | 'delete' | 'lock', id }）
+  // 行ごとの操作（null: 通常 / { type: 'rename' | 'delete' | 'lock' | 'child', id }）
   const [rowMode, setRowMode] = useState(null)
   // 「⋯」で操作（鍵・名前変更・削除）を出している行の id
   const [menuId, setMenuId] = useState(null)
@@ -69,6 +72,8 @@ export default function FolderDialog({
     const isOpen = isFolderOpen(folder) // 閉じている鍵付きフォルダは、件数・名前変更・削除を出さない
     const mode = rowMode?.id === folder.id ? rowMode.type : null
     const cancel = () => setRowMode(null)
+    const depth = folderDepth(folders, folder.id)
+    const subtree = folderSubtree(folders, folder.id)
 
     if (mode === 'lock') {
       return (
@@ -86,6 +91,22 @@ export default function FolderDialog({
         />
       )
     }
+    if (mode === 'child') {
+      return (
+        <RenameForm
+          folder={{ id: null, name: '' }}
+          label={`「${folder.name}」の中に`}
+          submitLabel="作成"
+          folders={folders}
+          busy={busy}
+          onSave={async (name) => {
+            let created
+            if (await run(async () => (created = await onAddChild(folder.id, name)))) selectAndClose(created.id)
+          }}
+          onCancel={cancel}
+        />
+      )
+    }
     if (mode === 'rename') {
       return (
         <RenameForm folder={folder} folders={folders} busy={busy} onSave={(name) => runRow(() => onRename(folder.id, name))} onCancel={cancel} />
@@ -95,7 +116,9 @@ export default function FolderDialog({
       return (
         <>
           <p className="folder-delete-text">
-            「{folder.name}」と中の {count} 件を削除します。
+            {subtree.size > 1
+              ? `「${folder.name}」と、中のフォルダ・${count}件を削除します。`
+              : `「${folder.name}」と中の ${count} 件を削除します。`}
           </p>
           <div className="folder-row-actions">
             <button type="button" className="btn btn-secondary btn-small" onClick={cancel} disabled={busy}>
@@ -126,6 +149,8 @@ export default function FolderDialog({
         <button
           type="button"
           className="folder-select"
+          // 中のフォルダは、段の深さだけ字下げする
+          style={{ paddingLeft: `${8 + (depth - 1) * 20}px` }}
           onClick={() => selectAndClose(folder.id)}
           aria-current={isCurrent ? 'true' : undefined}
           disabled={locked}
@@ -143,6 +168,16 @@ export default function FolderDialog({
         {/* 操作は「⋯」を押したときだけ出す（ふだんの一覧をすっきりさせる） */}
         {menuOpen && (
           <span className="folder-actions">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => openMode('child')}
+              aria-label={`「${folder.name}」の中にフォルダを追加`}
+              title={depth >= MAX_FOLDER_DEPTH ? `フォルダは${MAX_FOLDER_DEPTH}段までです` : isOpen ? '中にフォルダを追加' : '鍵を開けると追加できます'}
+              disabled={locked || !isOpen || depth >= MAX_FOLDER_DEPTH}
+            >
+              <FolderPlusIcon size={18} />
+            </button>
             <button
               type="button"
               className={`icon-btn${isLocked ? ' is-locked' : ''}`}
@@ -168,8 +203,8 @@ export default function FolderDialog({
               className="icon-btn icon-btn-danger"
               onClick={() => openMode('delete')}
               aria-label={`「${folder.name}」を削除`}
-              title={folders.length <= 1 ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'}
-              disabled={locked || folders.length <= 1 || !isOpen}
+              title={subtree.size >= folders.length ? '最後のフォルダは削除できません' : isOpen ? '削除' : '鍵を開けると削除できます'}
+              disabled={locked || subtree.size >= folders.length || !isOpen}
             >
               <TrashIcon size={18} />
             </button>
@@ -252,8 +287,8 @@ function RowForm({ onSubmit, busy, submitLabel, onCancel, error, children }) {
   )
 }
 
-/** フォルダ名の変更 */
-function RenameForm({ folder, folders, busy, onSave, onCancel }) {
+/** フォルダ名の変更（label・submitLabel を渡すと「中にフォルダを作る」にも使う） */
+function RenameForm({ folder, folders, busy, onSave, onCancel, label, submitLabel = '保存' }) {
   const [name, setName] = useState(folder.name)
   const [error, setError] = useState('')
 
@@ -267,7 +302,8 @@ function RenameForm({ folder, folders, busy, onSave, onCancel }) {
   }
 
   return (
-    <RowForm onSubmit={handleSubmit} busy={busy} submitLabel="保存" onCancel={onCancel} error={error}>
+    <RowForm onSubmit={handleSubmit} busy={busy} submitLabel={submitLabel} onCancel={onCancel} error={error}>
+      {label && <span className="folder-lock-label">{label}</span>}
       <input
         className="input"
         value={name}
@@ -283,7 +319,7 @@ function RenameForm({ folder, folders, busy, onSave, onCancel }) {
             onCancel()
           }
         }}
-        aria-label="フォルダ名"
+        aria-label={label ? `${label}作るフォルダの名前` : 'フォルダ名'}
         aria-invalid={Boolean(error)}
         autoComplete="off"
         enterKeyHint="done"

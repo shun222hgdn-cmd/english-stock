@@ -4,7 +4,7 @@
 -- すでにテーブルがある場合は「already exists」で止まり、既存のデータは変更されない。
 --
 -- 中身
---   1. folders：フォルダ（1つのアカウントを複数人で使い分ける。例：しゅん / ソヒ）
+--   1. folders：フォルダ（1つのアカウントを複数人で使い分ける。例：しゅん / ソヒ。中にフォルダも作れる）
 --   2. stocks ：英単語・フレーズ・例文
 --   3. RLS    ：ログイン中の本人のデータだけ読み書きできる（未ログインは一切不可）
 --   4. 管理者パスワード：ログイン用パスワードの変更と、フォルダの鍵の解除に使う
@@ -23,9 +23,15 @@ create table public.folders (
     name text not null check (char_length(btrim(name)) between 1 and 20),
     -- 鍵（任意）。パスワードの PBKDF2 ハッシュ（アプリ側で作る「画面での鍵」）。null なら鍵なし
     lock_hash text check (lock_hash is null or char_length(lock_hash) <= 200),
-    unique (id, user_id),   -- stocks から「フォルダID + 持ち主」の組で参照するため
-    unique (user_id, name)  -- 同じアカウント内で同じ名前は不可
+    -- 親フォルダ（入れ子・5段まで）。いちばん上は null。親を消すと中のフォルダも消える
+    parent_id uuid check (parent_id is null or parent_id <> id),
+    unique (id, user_id),   -- stocks・子フォルダから「フォルダID + 持ち主」の組で参照するため
+    unique (user_id, name), -- 同じアカウント内で同じ名前は不可
+    constraint folders_parent_fkey foreign key (parent_id, user_id)
+        references public.folders (id, user_id) on delete cascade
 );
+
+create index folders_parent_idx on public.folders (parent_id);
 
 -- ---------------------------------------------------------
 -- 2. 英単語・フレーズ・例文
@@ -129,6 +135,33 @@ begin
 end;
 $$;
 revoke all on function private.verify_admin_password(text) from public;
+
+-- フォルダの入れ子の深さを確かめる（いちばん上を 1 段目として 5 段目まで）
+create function private.check_folder_depth()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    depth integer := 1;
+    parent uuid := new.parent_id;
+begin
+    while parent is not null loop
+        depth := depth + 1;
+        if depth > 5 then
+            raise exception 'フォルダは5段までです' using errcode = '23514';
+        end if;
+        select f.parent_id into parent from public.folders f where f.id = parent;
+    end loop;
+    return new;
+end;
+$$;
+revoke all on function private.check_folder_depth() from public;
+
+create trigger check_folder_depth
+before insert or update of parent_id on public.folders
+for each row execute function private.check_folder_depth();
 
 -- 管理者パスワードを通さないパスワード変更を拒否する
 create function private.block_password_change()
