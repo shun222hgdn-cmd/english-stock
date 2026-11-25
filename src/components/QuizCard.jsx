@@ -1,6 +1,7 @@
 import { SpeakerIcon, SpeakerOffIcon } from './Icons'
 import { isSpeechSupported } from '../utils/speech'
 import { POS_SHORT, isLongText } from '../utils/validation'
+import { useSwipe } from '../hooks/useSwipe'
 
 /**
  * ランダム出題の単語カード。
@@ -22,6 +23,8 @@ import { POS_SHORT, isLongText } from '../utils/validation'
  *   categoryLabel: string,   // 左上の小さな種類（単語 / フレーズ / 例文）
  *   partOfSpeech?: string,   // 品詞（単語のときだけ）。問題の少し左に1文字の略（形・動など）で出す
  *   onToggle: () => void,    // カードを押したとき（答えを出す → 次の問題へ）
+ *   onSwipeLeft?: () => void,  // スマホで左へスワイプ（次の問題）
+ *   onSwipeRight?: () => void, // スマホで右へスワイプ（前の問題）
  * }} props
  */
 export default function QuizCard({
@@ -35,9 +38,17 @@ export default function QuizCard({
   categoryLabel,
   partOfSpeech,
   onToggle,
+  onSwipeLeft,
+  onSwipeRight,
 }) {
+  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight })
+
   return (
-    <div className="quiz-card-wrap">
+    <div
+      className="quiz-card-wrap"
+      {...swipe.handlers}
+      style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
+    >
       <button
         type="button"
         className="quiz-card"

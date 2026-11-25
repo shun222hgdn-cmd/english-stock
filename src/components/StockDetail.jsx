@@ -5,6 +5,7 @@ import LearnedButton from './LearnedButton'
 import { ChevronRightIcon, PencilIcon } from './Icons'
 import { categoryLabel, isLongText } from '../utils/validation'
 import { loadAutoSpeak, speakEnglish, stopSpeaking } from '../utils/speech'
+import { useSwipe } from '../hooks/useSwipe'
 
 /**
  * 単語・フレーズ・例文の詳細（一覧の行を押すと開く）。英語を大きく、日本語訳・品詞・コメントを省略せずに表示し、
@@ -24,6 +25,8 @@ import { loadAutoSpeak, speakEnglish, stopSpeaking } from '../utils/speech'
  */
 export default function StockDetail({ stock, position, onPrev, onNext, onSetLearned, onEdit, onClose }) {
   const titleId = useId()
+  // スマホ：左へスワイプで次、右へで前（「前へ / 次へ」と同じ）
+  const swipe = useSwipe({ onLeft: onNext, onRight: onPrev })
 
   // 自動読み上げがオンなら、開いたとき・前後に移ったときに英語を読む（閉じたら止める）
   useEffect(() => {
@@ -59,6 +62,11 @@ export default function StockDetail({ stock, position, onPrev, onNext, onSetLear
 
   return (
     <Modal header={header} labelId={titleId} onClose={onClose} className="modal-form stock-detail">
+      <div
+        className="detail-swipe"
+        {...swipe.handlers}
+        style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
+      >
       <div className="detail-english-row">
         <h2 id={titleId} className={`detail-english${isLongText(stock.english) ? ' is-long' : ''}`} lang="en">
           {stock.english}
@@ -78,6 +86,8 @@ export default function StockDetail({ stock, position, onPrev, onNext, onSetLear
       )}
 
       <LearnedButton key={stock.id} className="detail-learned" learned={Boolean(stock.learned)} onChange={onSetLearned} />
+
+      </div>
 
       {position && (
         <nav className="detail-nav" aria-label="前後の移動">

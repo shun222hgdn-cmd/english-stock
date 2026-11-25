@@ -203,6 +203,9 @@ export default function Quiz({ stocks, onSetLearned }) {
             partOfSpeech={current.category === 'word' ? current.part_of_speech : null}
             // カードを押す：答えが見えていなければ答え、見えていれば次の問題
             onToggle={answerVisible ? () => pickNext() : revealAnswer}
+            // スマホ：左へスワイプで次の問題、右へで前の問題
+            onSwipeLeft={() => pickNext()}
+            onSwipeRight={previousIds.length > 0 ? goBack : undefined}
           />
           <div className="quiz-actions">
             <button

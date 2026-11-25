@@ -2156,3 +2156,10 @@ body:has(dialog[open]) {
     transition: none;
   }
 }
+
+/* スワイプ：縦のスクロールはブラウザに任せ、横の動きだけアプリで受け取る。離したらすっと戻る */
+.quiz-card-wrap,
+.detail-swipe {
+  touch-action: pan-y;
+  transition: transform 0.18s ease-out;
+}
