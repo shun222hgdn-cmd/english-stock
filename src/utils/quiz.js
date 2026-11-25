@@ -1,4 +1,6 @@
 import { CATEGORIES } from './validation.js'
+import { sortByEnglish } from './search.js'
+import { loadChoice } from '../lib/preferences.js'
 
 // ランダム出題に関する処理（画面に依存しない純粋な関数なので、自動テストしやすい）
 
@@ -61,4 +63,40 @@ export function getQuestionAndAnswer(stock, direction) {
     return { question: stock.japanese, answer: stock.english }
   }
   return { question: stock.english, answer: stock.japanese }
+}
+
+/** 暗記の設定（右上の調整ボタンから）。最初の選択肢がはじめの値 */
+export const QUIZ_OPTIONS = [
+  { key: 'display', label: '表示', choices: [{ value: 'flip', label: '問題→答え' }, { value: 'both', label: '両方' }] },
+  { key: 'order', label: '順番', choices: [{ value: 'random', label: 'ランダム' }, { value: 'abc', label: 'ABC順' }] },
+  { key: 'learned', label: '覚えたもの', choices: [{ value: 'show', label: '出す' }, { value: 'hide', label: '出さない' }] },
+  {
+    key: 'auto',
+    label: '自動で進む',
+    choices: [
+      { value: 'off', label: 'オフ' },
+      { value: '3', label: '3秒' },
+      { value: '5', label: '5秒' },
+    ],
+  },
+]
+
+/** 保存した暗記の設定を読む（未保存・想定外の値は、はじめの値） */
+export function loadQuizOptions() {
+  return Object.fromEntries(
+    QUIZ_OPTIONS.map(({ key, choices }) => [key, loadChoice(`quiz_${key}`, choices.map((c) => c.value), choices[0].value)]),
+  )
+}
+
+/**
+ * 次の問題を選ぶ。
+ * - random：pickRandomStock と同じ（直前は避け、覚えたものは出にくい）
+ * - abc：英語のアルファベット順に1つずつ。最後まで行ったら最初に戻る
+ */
+export function pickNextStock(candidates, previousId = null, order = 'random', random = Math.random) {
+  if (order !== 'abc') return pickRandomStock(candidates, previousId, random)
+  if (candidates.length === 0) return null
+  const sorted = sortByEnglish(candidates)
+  const index = sorted.findIndex((stock) => stock.id === previousId)
+  return sorted[(index + 1) % sorted.length]
 }

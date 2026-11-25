@@ -2019,3 +2019,41 @@ body:has(dialog[open]) {
 .undo-bar-btn {
   color: var(--pen);
 }
+
+/* ---------- 暗記の設定 ---------- */
+.quiz-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.quiz-settings-btn {
+  margin-right: -8px;
+  color: var(--ink-soft);
+}
+
+.quiz-setting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 12px 14px;
+}
+
+.quiz-setting-label {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.quiz-setting .lang-switch-btn {
+  font-family: var(--font-ja);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+}
+
+/* 自動で進むがオンのときの小さな印 */
+.quiz-auto-mark {
+  margin-right: 10px;
+  color: var(--pen);
+}

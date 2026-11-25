@@ -2,7 +2,7 @@
 // 実行方法: npm test
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { filterByCategory, getQuestionAndAnswer, pickRandomStock } from '../src/utils/quiz.js'
+import { filterByCategory, getQuestionAndAnswer, loadQuizOptions, pickNextStock, pickRandomStock } from '../src/utils/quiz.js'
 
 const stocks = [
   { id: 'w1', category: 'word', english: 'Ambiguous', japanese: '曖昧な' },
@@ -116,4 +116,25 @@ test('全部覚えていても出題は止まらない', () => {
     { id: 'b', learned: true },
   ]
   assert.equal(pickRandomStock(pool, 'a', () => 0.5).id, 'b')
+})
+
+test('ABC順：アルファベット順に1つずつ進み、最後の次は最初に戻る', () => {
+  const pool = [
+    { id: 'c', english: 'Gamma' },
+    { id: 'a', english: 'Alpha' },
+    { id: 'b', english: 'Beta' },
+  ]
+  assert.equal(pickNextStock(pool, null, 'abc').id, 'a')
+  assert.equal(pickNextStock(pool, 'a', 'abc').id, 'b')
+  assert.equal(pickNextStock(pool, 'c', 'abc').id, 'a')
+  assert.equal(pickNextStock([], null, 'abc'), null)
+})
+
+test('ランダム順は pickRandomStock と同じ選び方', () => {
+  const pool = [{ id: 'x' }, { id: 'y' }]
+  assert.equal(pickNextStock(pool, 'x', 'random', () => 0).id, 'y')
+})
+
+test('暗記の設定：保存が無ければ、はじめの値', () => {
+  assert.deepEqual(loadQuizOptions(), { display: 'flip', order: 'random', learned: 'show', auto: 'off' })
 })
