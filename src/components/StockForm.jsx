@@ -103,7 +103,8 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
       onClose={onClose}
       busy={saving}
       closeOnBackdrop={isEmpty}
-      className="modal-form"
+      // 入力するので、スマホでは上から出す（下から出すとキーボードで隠れる）
+      className="modal-form modal-top"
     >
       <form
         onSubmit={(event) => {

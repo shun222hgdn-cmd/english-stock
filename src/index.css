@@ -2208,3 +2208,45 @@ body:has(dialog[open]) {
 .folder-toggle:hover {
   color: var(--ink);
 }
+
+/* ---------- 入力する画面は、スマホでは上から出す ----------
+   下から出すと、キーボードが出たときに入力欄が隠れてしまうため（追加・編集・まとめて追加・パスワード変更） */
+@media (max-width: 600px) {
+  .modal.modal-top {
+    margin: 0 0 auto;
+    border-top: none;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: 0 0 16px 16px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 0;
+    animation: sheet-down 0.22s ease-out;
+  }
+
+  /* つまみは下側に */
+  .modal.modal-top .modal-body::before {
+    display: none;
+  }
+
+  .modal.modal-top .modal-body::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 14px auto -8px;
+    border-radius: 2px;
+    background-color: var(--rule-strong);
+  }
+}
+
+@keyframes sheet-down {
+  from {
+    transform: translateY(-32px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal.modal-top {
+    animation: none;
+  }
+}

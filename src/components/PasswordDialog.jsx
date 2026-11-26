@@ -149,7 +149,7 @@ export default function PasswordDialog({ email, onClose }) {
   }
 
   return (
-    <Modal title="パスワード変更" onClose={onClose} busy={busy} closeOnBackdrop={!dirty} className="modal-form">
+    <Modal title="パスワード変更" onClose={onClose} busy={busy} closeOnBackdrop={!dirty} className="modal-form modal-top">
       {body}
     </Modal>
   )

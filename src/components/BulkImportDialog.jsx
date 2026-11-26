@@ -58,7 +58,7 @@ export default function BulkImportDialog({ folderName, existingStocks, onImport,
   )
 
   return (
-    <Modal title="まとめて追加" onClose={onClose} busy={busy} closeOnBackdrop={!text.trim() || step === 'done'} className="modal-form">
+    <Modal title="まとめて追加" onClose={onClose} busy={busy} closeOnBackdrop={!text.trim() || step === 'done'} className="modal-form modal-top">
       {step === 'done' && (
         <div className="password-done">
           <p className="saved-message">
