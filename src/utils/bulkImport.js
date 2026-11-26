@@ -21,6 +21,7 @@ const CATEGORY_FROM_LABEL = { 単語: 'word', フレーズ: 'phrase', 例文: 's
 /** ChatGPT に貼り付けてもらう「頼む文」 */
 export const CHATGPT_PROMPT = `次の英単語・英語フレーズ・例文を、English Stock に取り込める形にしてください。
 ・1行に1つ、「英語 | 日本語訳 | 品詞 | コメント」の形で書く
+・行の先頭に「1. 」「2. 」と番号を付ける（知っているものを「3と5を消して」のように番号で消せるように）
 ・日本語訳は自然で短く
 ・品詞は単語のときだけ、名詞・代名詞・動詞・形容詞・副詞・助動詞・前置詞・冠詞・接続詞・間投詞 から1つ（フレーズ・例文や迷うときは空欄）
 ・例文は文の終わりに . ? ! を付ける
@@ -75,13 +76,26 @@ export function parseCsv(text) {
   return rows
 }
 
-/** 区切り（| またはタブ）の行を、セルの配列にする。表の行（| a | b |）の両端の | も外す */
+/**
+ * 行の先頭の番号を外す（「1. 」「2) 」「3、」「(4) 」「⑤」など）。取り込む内容には番号を入れない。
+ * 「1.5 times」のような英語は崩さないよう、「.」「:」のあとは空白があるときだけ番号とみなす。
+ */
+const stripNumber = (text) => text.replace(/^\s*(?:\(?\d{1,3}(?:[.:]\s+|[)）、．：]\s*)|[\u2460-\u2473]\s*)/, '')
+
+/** 区切り（| またはタブ）の行を、セルの配列にする。表の行（| a | b |）の両端の | と、番号だけの列も外す */
 function splitLine(line) {
-  if (line.includes('\t')) return line.split('\t').map((c) => c.trim())
-  let text = line.trim()
-  if (text.startsWith('|')) text = text.slice(1)
-  if (text.endsWith('|')) text = text.slice(0, -1)
-  return text.split('|').map((c) => c.trim())
+  let cells
+  if (line.includes('\t')) cells = line.split('\t').map((c) => c.trim())
+  else {
+    let text = line.trim()
+    if (text.startsWith('|')) text = text.slice(1)
+    if (text.endsWith('|')) text = text.slice(0, -1)
+    cells = text.split('|').map((c) => c.trim())
+  }
+  // 表の左端の「番号」の列（1 / # / No. / 番号）は読み飛ばす
+  if (cells.length >= 3 && /^(\d{1,3}\.?|#|no\.?|番号)$/i.test(cells[0])) cells.shift()
+  cells[0] = stripNumber(cells[0])
+  return cells
 }
 
 /** 見出しの行か（「英語」「English」「種類」などで始まる） */

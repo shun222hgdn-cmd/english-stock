@@ -98,3 +98,19 @@ DILIGENT | 勤勉な`)
     [true, false, true],
   )
 })
+
+test('ChatGPT が付けた番号は取り込まない（1. / 2) / ③ / 表の番号の列）', () => {
+  const { rows, errors } = parseBulkText(`1. resilient | 回復力のある | 形容詞
+2) break the ice | 場を和ませる
+③ postpone | 延期する | 動詞
+| # | 英語 | 日本語訳 |
+|---|---|---|
+| 4 | vivid | 鮮やかな |`)
+  assert.deepEqual(errors, [])
+  assert.deepEqual(pick(rows).map((r) => r[1]), ['resilient', 'break the ice', 'postpone', 'vivid'])
+})
+
+test('番号に見えても英語の一部なら消さない（1.5 times）', () => {
+  const { rows } = parseBulkText('1.5 times | 1.5倍')
+  assert.equal(rows[0].english, '1.5 times')
+})
