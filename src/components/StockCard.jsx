@@ -59,7 +59,7 @@ export default function StockCard({ stock, showCategory = false, onOpen, onDelet
   }
 
   return (
-    <li className="stock-item">
+    <li className={`stock-item${swiped ? ' is-swiped' : ''}`}>
       <button
         type="button"
         className="stock-delete"

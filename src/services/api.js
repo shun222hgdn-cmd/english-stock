@@ -14,13 +14,14 @@ async function unwrap(request) {
   return data
 }
 
-/** 保存する列だけにそろえる（品詞・コメントは未設定なら null） */
-const toStockRow = ({ category, english, japanese, part_of_speech = null, note = null }) => ({
+/** 保存する列だけにそろえる（品詞・コメントは未設定なら null。folder_id は渡したときだけ＝フォルダを移すとき） */
+const toStockRow = ({ category, english, japanese, part_of_speech = null, note = null, folder_id }) => ({
   category,
   english,
   japanese,
   part_of_speech,
   note,
+  ...(folder_id ? { folder_id } : {}),
 })
 
 // ---------- 単語・フレーズ ----------

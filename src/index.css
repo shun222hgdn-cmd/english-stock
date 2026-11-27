@@ -215,8 +215,10 @@ button:disabled {
   color: var(--on-pen);
 }
 
-.btn-primary:hover:not(:disabled) {
-  filter: brightness(1.08);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
 }
 
 /* 補助の操作：線だけ */
@@ -226,8 +228,10 @@ button:disabled {
   color: var(--ink);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--pen-soft);
+  }
 }
 
 .btn-danger {
@@ -245,9 +249,11 @@ button:disabled {
   font-weight: 600;
 }
 
-.btn-text:hover:not(:disabled) {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (hover: hover) {
+  .btn-text:hover:not(:disabled) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 .btn-text-danger {
@@ -280,9 +286,11 @@ button:disabled {
   color: var(--ink-soft);
 }
 
-.icon-btn:hover:not(:disabled) {
-  color: var(--ink);
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .icon-btn:hover:not(:disabled) {
+    color: var(--ink);
+    background-color: var(--pen-soft);
+  }
 }
 
 .icon-btn-danger,
@@ -432,8 +440,10 @@ button:disabled {
   top: 44px;
 }
 
-.clear-btn:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .clear-btn:hover {
+    color: var(--ink);
+  }
 }
 
 /* ラベルの行（左：英語 / 右：品詞のプルダウン） */
@@ -536,9 +546,11 @@ button:disabled {
   white-space: nowrap;
 }
 
-.segmented-btn:hover:not(.is-active) {
-  color: var(--ink);
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .segmented-btn:hover:not(.is-active) {
+    color: var(--ink);
+    background-color: var(--pen-soft);
+  }
 }
 
 /* 選択中：青ペンの文字・薄い青の下地・太い下線 */
@@ -647,8 +659,10 @@ code {
   transition: transform 0.12s, filter 0.15s;
 }
 
-.fab:hover {
-  filter: brightness(1.08);
+@media (hover: hover) {
+  .fab:hover {
+    filter: brightness(1.08);
+  }
 }
 
 .fab:active {
@@ -764,8 +778,10 @@ code {
   text-align: left;
 }
 
-.stock-row:hover {
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .stock-row:hover {
+    background-color: var(--pen-soft);
+  }
 }
 
 .stock-text {
@@ -845,8 +861,10 @@ code {
   border-left: 1px solid var(--rule-strong);
 }
 
-.lang-switch-btn:hover:not(.is-active) {
-  color: var(--ink);
+@media (hover: hover) {
+  .lang-switch-btn:hover:not(.is-active) {
+    color: var(--ink);
+  }
 }
 
 .lang-switch-btn.is-active {
@@ -1010,8 +1028,10 @@ code {
   font-size: 0.95rem;
 }
 
-.folder-btn:hover {
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .folder-btn:hover {
+    background-color: var(--pen-soft);
+  }
 }
 
 .folder-btn svg {
@@ -1078,8 +1098,10 @@ code {
   text-align: left;
 }
 
-.folder-select:hover:not(:disabled) {
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .folder-select:hover:not(:disabled) {
+    background-color: var(--pen-soft);
+  }
 }
 
 .folder-select svg {
@@ -1277,8 +1299,10 @@ code {
   color: var(--ink-faint);
 }
 
-.speak-btn:hover:not(:disabled) {
-  color: var(--pen);
+@media (hover: hover) {
+  .speak-btn:hover:not(:disabled) {
+    color: var(--pen);
+  }
 }
 
 .speak-btn:active {
@@ -1531,8 +1555,10 @@ code {
   white-space: nowrap;
 }
 
-.undo-bar-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.1);
+@media (hover: hover) {
+  .undo-bar-btn:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 @keyframes undo-in {
@@ -1562,8 +1588,10 @@ code {
   text-align: left;
 }
 
-.settings-row:hover:not(:disabled) {
-  background-color: var(--pen-soft);
+@media (hover: hover) {
+  .settings-row:hover:not(:disabled) {
+    background-color: var(--pen-soft);
+  }
 }
 
 .settings-row svg {
@@ -1720,8 +1748,10 @@ code {
   color: var(--ink-faint);
 }
 
-.nav-btn:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .nav-btn:hover {
+    color: var(--ink);
+  }
 }
 
 .nav-btn.is-active {
@@ -2227,8 +2257,10 @@ body:has(dialog[open]) {
   transform: rotate(90deg);
 }
 
-.folder-toggle:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .folder-toggle:hover {
+    color: var(--ink);
+  }
 }
 
 /* ---------- 入力する画面は、スマホでは上から出す ----------
@@ -2271,4 +2303,16 @@ body:has(dialog[open]) {
   .modal.modal-top {
     animation: none;
   }
+}
+
+/* ---------- 編集：別のフォルダへ移す ---------- */
+.folder-move {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.folder-move-select {
+  margin-right: 0;
+  max-width: 62%;
+  text-overflow: ellipsis;
 }

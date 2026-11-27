@@ -107,12 +107,13 @@ export default function Quiz({ stocks, onSetLearned }) {
   // 最初や、今の問題が候補から無くなったとき（削除・設定の変更など）は選び直す
   useEffect(() => {
     if (current === null && candidates.length > 0) {
-      const first = pickNextStock(candidates, currentId, options.order)
+      // 今の問題が外れたとき（覚えたので出さない、など）は、ABC順ならその次から続ける
+      const first = pickNextStock(candidates, stocks.find((stock) => stock.id === currentId) ?? currentId, options.order)
       setCurrentId(first.id)
       setShowAnswer(false)
       if (loadAutoSpeak() && (quizDirection === 'en-ja' || options.display === 'both')) speakEnglish(first.english)
     }
-  }, [current, candidates, currentId, quizDirection, options.order, options.display])
+  }, [current, candidates, currentId, quizDirection, options.order, options.display, stocks])
 
   // 自動で進む：一定時間ごとに「答えを出す → 次の問題」（両方表示なら次の問題だけ）。設定を開いている間は止める
   useEffect(() => {

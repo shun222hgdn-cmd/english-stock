@@ -91,12 +91,20 @@ export function loadQuizOptions() {
 /**
  * 次の問題を選ぶ。
  * - random：pickRandomStock と同じ（直前は避け、覚えたものは出にくい）
- * - abc：英語のアルファベット順に1つずつ。最後まで行ったら最初に戻る
+ * - abc：英語のアルファベット順に1つずつ。最後まで行ったら最初に戻る。
+ *   直前の問題が候補から外れていても（「覚えた」で出さなくなったときなど）、データ（previous）を渡せばその次から続ける
+ *
+ * @param {Array<object>} candidates
+ * @param {string | { id: string, english: string } | null} previous 直前の問題の id か、データそのもの
  */
-export function pickNextStock(candidates, previousId = null, order = 'random', random = Math.random) {
+export function pickNextStock(candidates, previous = null, order = 'random', random = Math.random) {
+  const previousId = previous && typeof previous === 'object' ? previous.id : previous
   if (order !== 'abc') return pickRandomStock(candidates, previousId, random)
   if (candidates.length === 0) return null
-  const sorted = sortByEnglish(candidates)
+  const missing = previous && typeof previous === 'object' && !candidates.some((stock) => stock.id === previous.id)
+  // 外れた問題も一度並べに入れて位置を決め、そのすぐ後ろを選ぶ
+  const sorted = sortByEnglish(missing ? [...candidates, previous] : candidates)
   const index = sorted.findIndex((stock) => stock.id === previousId)
-  return sorted[(index + 1) % sorted.length]
+  const next = sorted[(index + 1) % sorted.length]
+  return next.id === previousId && missing ? sorted[0] : next
 }

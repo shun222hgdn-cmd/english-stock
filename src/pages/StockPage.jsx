@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
@@ -24,22 +24,37 @@ const NOUNS = { all: '単語・フレーズ・例文', word: '単語', phrase: '
  *   onEdit: (id: string, input: object) => Promise<void>,
  *   onDelete: (id: string) => Promise<void>,
  *   onSetLearned: (id: string, learned: boolean) => Promise<void>,
+ *   folders: Array<object>,                    // 編集で別のフォルダに移すとき用
  * }} props
  */
-export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onSetLearned }) {
+export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdit, onDelete, onSetLearned, folders = [] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [sort, setSort] = useState(() => loadChoice('stockSort', SORTS.map((s) => s.value), 'abc'))
   // 開いている画面：詳細（id で持ち、編集後も最新を表示）・登録/編集フォーム
   const [detailId, setDetailId] = useState(null)
   const [form, setForm] = useState(null) // null / { mode: 'add' } / { mode: 'edit', stock }
   const [swipedId, setSwipedId] = useState(null) // 削除ボタンを出している行（一度に1行だけ）
+  const ignoreOpenRef = useRef(false) // 削除ボタンをしまうために押した行は、詳細を開かない
 
-  // 削除ボタンが出ている間に上下へスクロールしたら、ボタンをしまう
+  // 削除ボタンが出ている間に、上下へスクロールしたり、ほかの場所に触れたりしたら、ボタンをしまう
   useEffect(() => {
     if (!swipedId) return
     const close = () => setSwipedId(null)
-    window.addEventListener('scroll', close, { passive: true, once: true })
-    return () => window.removeEventListener('scroll', close)
+    const closeOutside = (event) => {
+      if (event.target.closest?.('.stock-item.is-swiped')) return
+      close()
+      // ほかの行を押したときは、しまうだけ（iPhone のメールと同じ）
+      if (event.target.closest?.('.stock-row')) {
+        ignoreOpenRef.current = true
+        setTimeout(() => (ignoreOpenRef.current = false), 600)
+      }
+    }
+    window.addEventListener('scroll', close, { passive: true })
+    document.addEventListener('pointerdown', closeOutside)
+    return () => {
+      window.removeEventListener('scroll', close)
+      document.removeEventListener('pointerdown', closeOutside)
+    }
   }, [swipedId])
 
   const noun = NOUNS[filter] ?? NOUNS.all
@@ -67,7 +82,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
           key={stock.id}
           stock={stock}
           showCategory={filter === 'all'}
-          onOpen={() => setDetailId(stock.id)}
+          onOpen={() => !ignoreOpenRef.current && setDetailId(stock.id)}
           onDelete={() => {
             setSwipedId(null)
             onDelete(stock.id).catch(() => window.alert('削除できませんでした。'))
@@ -162,6 +177,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
           // 追加時の種類：単語 / フレーズ / 例文 表示中はその種類、「すべて」なら英語の内容から自動判定
           defaultCategory={filter === 'all' ? null : filter}
           existingStocks={stocks}
+          folders={folders}
           onSubmit={(values) => (form.stock ? onEdit(form.stock.id, values) : onAdd(values))}
           onDelete={form.stock && (() => onDelete(form.stock.id))}
           onClose={() => setForm(null)}

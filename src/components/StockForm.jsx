@@ -13,6 +13,7 @@ import {
   findDuplicate,
   guessCategory,
 } from '../utils/validation'
+import { folderDepth, sortFolders } from '../utils/folders'
 import { useBusy } from '../hooks/useBusy'
 
 /**
@@ -28,13 +29,16 @@ import { useBusy } from '../hooks/useBusy'
  *   initialValues?: { id: string, category: string, english: string, japanese: string, part_of_speech?: string, note?: string },
  *   defaultCategory?: 'word' | 'phrase' | 'sentence' | null, // 追加時の種類（null なら自動判定）
  *   existingStocks?: Array<{ id: string, english: string, japanese: string }>, // 重複チェック用（同じフォルダ）
+ *   folders?: Array<{ id: string, name: string, parent_id: string | null }>,  // 編集時に別のフォルダへ移すとき用
  *   onSubmit: (values: object) => Promise<void>,
  *   onDelete?: () => Promise<void>,  // 編集時だけ
  *   onClose: () => void,
  * }} props
  */
-export default function StockForm({ mode, initialValues, defaultCategory = null, existingStocks = [], onSubmit, onDelete, onClose }) {
+export default function StockForm({ mode, initialValues, defaultCategory = null, existingStocks = [], folders = [], onSubmit, onDelete, onClose }) {
   const noteId = useId()
+  const folderId = useId()
+  const [folder, setFolder] = useState(initialValues?.folder_id ?? null) // 入れるフォルダ（編集時だけ選べる）
   const englishRef = useRef(null)
   const japaneseRef = useRef(null)
   const [english, setEnglish] = useState(initialValues?.english ?? '')
@@ -68,7 +72,8 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
     if (!isValid) return (errors.english ? englishRef : japaneseRef).current?.focus()
     if (extras.error) return
 
-    const ok = await run(() => onSubmit({ category, ...values, ...extras.values }))
+    const moved = folder && folder !== initialValues?.folder_id ? { folder_id: folder } : {}
+    const ok = await run(() => onSubmit({ category, ...values, ...extras.values, ...moved }))
     if (!ok) return
     if (!addAnother) return onClose()
     setEnglish('')
@@ -201,6 +206,30 @@ export default function StockForm({ mode, initialValues, defaultCategory = null,
             />
           </div>
         </div>
+
+        {/* 編集時だけ：別のフォルダへ移す（フォルダが2つ以上あるとき） */}
+        {!isAdd && folder && folders.length > 1 && (
+          <div className="field-group">
+            <div className="group-field field-label-row folder-move">
+              <label htmlFor={folderId} className="field-label">
+                フォルダ
+              </label>
+              <select
+                id={folderId}
+                className="pos-select folder-move-select"
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+                disabled={saving}
+              >
+                {sortFolders(folders).map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {'　'.repeat(folderDepth(folders, f.id) - 1) + f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         <p className="keyboard-hint" aria-hidden="true">
           Enter で次へ・保存 ／ Shift + Enter で改行

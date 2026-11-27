@@ -60,7 +60,7 @@ function MainApp({ userId, email, onSignOut }) {
   const [selectedFolderId, setSelectedFolderId] = useState(() => loadValue(`folder:${userId}`))
   const [unlockedIds, setUnlockedIds] = useState(() => new Set())
   const unlock = (id) => setUnlockedIds((prev) => new Set(prev).add(id))
-  // 削除の直後に出す「元に戻す」（{ key, message, restore } / null）。新しく消したら、そちらに入れ替わる
+  // 削除の直後に出す「元に戻す」（{ key, message, restore, stocks? } / null）。新しく消したら、そちらに入れ替わる
   const [undo, setUndo] = useState(null)
   const clearUndo = useCallback(() => setUndo(null), [])
 
@@ -68,6 +68,19 @@ function MainApp({ userId, email, onSignOut }) {
   const foldersData = useFolders(userId)
   const { stocks } = stocksData
   const { folders } = foldersData
+
+  /** 単語などを消したあとの「元に戻す」。出ている「元に戻す」も単語などの削除なら、続けて消した分をまとめて戻せるようにする */
+  function showStocksUndo(deleted, message) {
+    setUndo((prev) => {
+      const all = prev?.stocks ? [...prev.stocks, ...deleted] : deleted
+      return {
+        key: Date.now(),
+        stocks: all,
+        message: prev?.stocks ? `${all.length}件を削除しました` : message,
+        restore: () => stocksData.restoreStocks(all),
+      }
+    })
+  }
 
   // アプリに戻ってきたとき（タブの切り替え・スマホで開き直したとき）に、他の端末での変更も裏で読み直す
   const { refresh: refreshStocks } = stocksData
@@ -231,12 +244,13 @@ function MainApp({ userId, email, onSignOut }) {
         // 追加は表示中のフォルダに入れる
         onAdd={(input) => stocksData.addStocks(currentFolder.id, [input])}
         onEdit={stocksData.editStock}
+        folders={folders}
         onSetLearned={stocksData.setLearned}
         // 消したら数秒だけ「元に戻す」を出す（同じ id・同じ内容で戻す）
         onDelete={async (id) => {
           const stock = stocks.find((item) => item.id === id)
           await stocksData.removeStock(id)
-          setUndo({ key: Date.now(), message: `「${stock.english}」を削除しました`, restore: () => stocksData.restoreStocks([stock]) })
+          showStocksUndo([stock], `「${stock.english}」を削除しました`)
         }}
       />
     )
@@ -324,11 +338,7 @@ function MainApp({ userId, email, onSignOut }) {
             const learned = folderStocks.filter((stock) => stock.learned)
             await stocksData.removeStocks(learned.map((stock) => stock.id))
             closeDialog()
-            setUndo({
-              key: Date.now(),
-              message: `覚えた ${learned.length}件を削除しました`,
-              restore: () => stocksData.restoreStocks(learned),
-            })
+            showStocksUndo(learned, `覚えた ${learned.length}件を削除しました`)
           }}
           signingOut={signingOut}
           onOpenPassword={() => setDialog('password')}

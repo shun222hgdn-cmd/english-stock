@@ -138,3 +138,11 @@ test('ランダム順は pickRandomStock と同じ選び方', () => {
 test('暗記の設定：保存が無ければ、はじめの値', () => {
   assert.deepEqual(loadQuizOptions(), { display: 'flip', order: 'random', learned: 'show', auto: 'off' })
 })
+
+test('ABC順：今の問題が候補から外れても、最初に戻らずその次から続ける', () => {
+  const pool = [{ id: 'a', english: 'apple' }, { id: 'b', english: 'banana' }, { id: 'd', english: 'dog' }]
+  const removed = { id: 'c', english: 'cat', learned: true }
+  assert.equal(pickNextStock(pool, removed, 'abc').id, 'd')
+  assert.equal(pickNextStock(pool, { id: 'z', english: 'zoo' }, 'abc').id, 'a') // 最後なら最初へ
+  assert.equal(pickNextStock(pool, pool[0], 'abc').id, 'b') // 候補の中にあれば今までどおり
+})
