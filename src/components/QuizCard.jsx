@@ -42,7 +42,8 @@ export default function QuizCard({
   onSwipeRight,
 }) {
   // 指が触れている間は縦にスクロールしない（横に払う操作だけ）
-  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight, tilt: true, lockScroll: true })
+  // カードの幅の 1/3 まで払えば次（前）へ進む
+  const swipe = useSwipe({ onLeft: onSwipeLeft, onRight: onSwipeRight, tilt: true, lockScroll: true, threshold: 1 / 3 })
 
   return (
     <div
