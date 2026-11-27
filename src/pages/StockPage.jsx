@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SearchBar from '../components/SearchBar'
 import StockCard from '../components/StockCard'
 import StockForm from '../components/StockForm'
@@ -33,6 +33,14 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const [detailId, setDetailId] = useState(null)
   const [form, setForm] = useState(null) // null / { mode: 'add' } / { mode: 'edit', stock }
   const [swipedId, setSwipedId] = useState(null) // 削除ボタンを出している行（一度に1行だけ）
+
+  // 削除ボタンが出ている間に上下へスクロールしたら、ボタンをしまう
+  useEffect(() => {
+    if (!swipedId) return
+    const close = () => setSwipedId(null)
+    window.addEventListener('scroll', close, { passive: true, once: true })
+    return () => window.removeEventListener('scroll', close)
+  }, [swipedId])
 
   const noun = NOUNS[filter] ?? NOUNS.all
   const detailStock = detailId && stocks.find((stock) => stock.id === detailId)
