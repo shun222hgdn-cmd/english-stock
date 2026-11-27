@@ -1241,8 +1241,30 @@ code {
 /* ---------- 発音 ---------- */
 /* 単語帳の行：左に「押すと編集」の部分、右端に 🔊 */
 .stock-item {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 行をずらす部分（行の中身 + 🔊）。下に削除ボタンが隠れている */
+.stock-swipe {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
+  background-color: var(--paper);
+  touch-action: pan-y;
+}
+
+.stock-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  background-color: var(--red);
+  color: var(--on-pen);
 }
 
 .stock-item .stock-row {

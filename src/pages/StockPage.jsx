@@ -32,6 +32,7 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   // 開いている画面：詳細（id で持ち、編集後も最新を表示）・登録/編集フォーム
   const [detailId, setDetailId] = useState(null)
   const [form, setForm] = useState(null) // null / { mode: 'add' } / { mode: 'edit', stock }
+  const [swipedId, setSwipedId] = useState(null) // 削除ボタンを出している行（一度に1行だけ）
 
   const noun = NOUNS[filter] ?? NOUNS.all
   const detailStock = detailId && stocks.find((stock) => stock.id === detailId)
@@ -54,7 +55,18 @@ export default function StockPage({ stocks, filter, onFilterChange, onAdd, onEdi
   const renderRows = (items) => (
     <ul className="ruled-list">
       {items.map((stock) => (
-        <StockCard key={stock.id} stock={stock} showCategory={filter === 'all'} onOpen={() => setDetailId(stock.id)} />
+        <StockCard
+          key={stock.id}
+          stock={stock}
+          showCategory={filter === 'all'}
+          onOpen={() => setDetailId(stock.id)}
+          onDelete={() => {
+            setSwipedId(null)
+            onDelete(stock.id).catch(() => window.alert('削除できませんでした。'))
+          }}
+          swiped={swipedId === stock.id}
+          onSwipedChange={(swiped) => setSwipedId(swiped ? stock.id : null)}
+        />
       ))}
     </ul>
   )
